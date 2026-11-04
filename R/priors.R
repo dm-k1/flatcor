@@ -2,7 +2,7 @@
 ##  The three priors: one family, R-squared ~ Beta(a, 1), uniform direction
 ## =====================================================================
 ## With one predictor, Jeffreys' flat correlation is the only choice. With k
-## predictors, not everything can stay flat (objective-bayes/docs/motivating_simulation.R): keeping each
+## predictors, not everything can stay flat (objective-bayes/docs/1_why_a_choice.md): keeping each
 ## partial correlation flat makes R-squared grow with k, keeping the total flat
 ## makes each partial correlation shrink with k. The three options compared:
 ##
@@ -19,7 +19,7 @@
 ## Beta(a, 1). On R that is the density 2a R^(2a - 1); with one predictor,
 ## flat_partial_r and flat_r are both flat on r.
 ## The default is flat_partial_r, the prior the validation recommends
-## (objective-bayes/docs/3_comparison.md, section 8). A function that uses it because no prior
+## (the validation, https://github.com/dm-k1/objective-bayes). A function that uses it because no prior
 ## was given says so, once per session, so the choice stays visible.
 
 prior_names   <- c("flat_partial_r", "flat_r", "flat_r_squared")

@@ -6,7 +6,7 @@
 ## only on that coefficient's own contribution (its sample partial
 ## correlation), n and k. This avoids the conditional Lindley paradox of priors
 ## with one shared scale (Som, Hans & MacEachern, 2016), which affects the
-## joint test as it does the JZS default. objective-bayes/docs/2_how_it_calculates.md, section 10.
+## joint test as it does the JZS default. objective-bayes/docs/appendix/A_derivations.md, section 10.
 ##
 ## Prior for one coefficient, in noise units f, under R^2 ~ Beta(a, 1) with a
 ## uniform direction (R/priors.R):
@@ -20,7 +20,7 @@
 ##   I(b) = integral_0^inf v^m exp(-v^2/2 + b v) dv,   m = n - k - 1,
 ## with r the sample partial correlation. The average over the prior is taken
 ## on a grid in f around the peak of this ratio (width about 1/sqrt(n)), each
-## cell weighted by its exact prior probability. Checks: objective-bayes/validation/05.
+## cell weighted by its exact prior probability. Checks: objective-bayes, study 2 (checks 2.7 to 2.12).
 ##
 ## A term with q columns (a factor with q + 1 levels) is tested as a block, in
 ## the same way: f is the length of its effect in noise units, its direction
@@ -30,7 +30,7 @@
 ## exp(-n f^2/2) E_c[I(sqrt(n) r f c)] / I(0) with m = n - k + q - 2 and c the
 ## cosine between the effect and the data's direction (for q = 1, c = +-1: the
 ## formula above). With q = k this is the whole model against the intercept
-## only (R/bayes_factor.R). Checks: objective-bayes/validation/05, C9 and C10.
+## only (R/bayes_factor.R). Checks: objective-bayes, study 2, checks 2.15 and 2.16.
 
 ## log I(b) for a vector of b: a grid around the peak of the integrand
 log_peak_integral <- function(b, m, half_width = 12, points = 241) {
@@ -189,7 +189,7 @@ log_bayes_factor_from_prior_cdf_of_f <- function(partial_r, sample_size, number_
 #' @param points_f,points_share Grid sizes: for f, around the peak of the
 #'   likelihood, and for the share, inside the prior. With the defaults the
 #'   error is below about 2e-4 on the log scale for n = 50 to 1e6, k = 1 to 30
-#'   (against \code{stats::integrate()}, objective-bayes/validation/05).
+#'   (against \code{stats::integrate()}, objective-bayes, study 2, check 2.12).
 #' @return The log Bayes factor for an effect against no effect.
 #' @examples
 #' log_bayes_factor_conditional(0.2, sample_size = 100, number_of_predictors = 3,

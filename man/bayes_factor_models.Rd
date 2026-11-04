@@ -13,8 +13,8 @@ bayes_factor_models(model_a, model_b, prior = "flat_partial_r")
 likely, R-squared ~ Beta(k/2, 1)), \code{"flat_r"} (R-squared ~
 Beta(1/2, 1) for every k) or \code{"flat_r_squared"} (R-squared ~
 Beta(1, 1) for every k). The default is \code{"flat_partial_r"}, the
-prior the validation recommends; the comparison is in
-\code{docs/3_comparison.md}.}
+prior the validation recommends
+(\url{https://github.com/dm-k1/objective-bayes}).}
 }
 \value{
 The Bayes factor of model A against model B.

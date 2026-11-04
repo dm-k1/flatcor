@@ -8,6 +8,14 @@
 //   b = sigma * f * (direction expressed in predictor units),  f = R / sqrt(1 - R^2)
 // In these coordinates the prior has no peak at zero, so the sampler
 // reaches small effects for any number of predictors.
+//
+// The sampler works with the size of R, R_magnitude in (0, 1). With several
+// predictors the sign of each coefficient lives in the direction. With one
+// predictor the sign of R is + or - with probability 1/2 each: it is
+// marginalised in the model block (the likelihood averaged over both signs)
+// and drawn in generated quantities. Sampling a signed R on (-1, 1) instead
+// would put a zero of the density at R = 0 whenever a > 1/2 (flat_r_squared:
+// density |R|), a wall the sampler cannot cross without divergent transitions.
 data {
   int<lower=1> N;
   int<lower=1> K;
@@ -27,8 +35,7 @@ transformed data {
 parameters {
   real alpha;
   real<lower=0> sigma;
-  // with one predictor the sign lives in R; with more, in the direction
-  real<lower=(K == 1 ? -1 : 0), upper=1> R;
+  real<lower=0, upper=1> R_magnitude;    // |R|
   // the direction is z / |z|. Any density for z that depends only on its length
   // makes the direction uniform; this one keeps |z| near 1, away from 0, where
   // the direction would be undefined (Stan's unit_vector lets |z| reach 0,
@@ -36,16 +43,17 @@ parameters {
   vector[K > 1 ? K : 0] z;
 }
 transformed parameters {
-  real f = R / sqrt(1 - square(R));          // Cohen's f (signed when K = 1)
+  real f_magnitude = R_magnitude / sqrt(1 - square(R_magnitude));   // |Cohen's f|
   vector[K] direction;
   if (K == 1) direction = rep_vector(1, 1);
   else        direction = z / norm2(z);
-  vector[K] b = sigma * f * mdivide_right_tri_low(direction', root)';   // b' Sigma b = sigma^2 f^2
+  // b' Sigma b = sigma^2 f^2; with one predictor this is |b|, its sign follows
+  vector[K] b_magnitude = sigma * f_magnitude * mdivide_right_tri_low(direction', root)';
 }
 model {
-  // factor 1: R^2 ~ Beta(a, 1), which is density 2a |R|^(2a - 1) on R (flat
-  // for a = 1/2; with K = 1, flat_partial_r and flat_r both have a = 1/2)
-  if (r_squared_shape != 0.5) target += (2 * r_squared_shape - 1) * log(abs(R));
+  // factor 1: R^2 ~ Beta(a, 1), which is density 2a R^(2a - 1) on R in (0, 1)
+  // (flat for a = 1/2; with K = 1, flat_partial_r and flat_r both have a = 1/2)
+  if (r_squared_shape != 0.5) target += (2 * r_squared_shape - 1) * log(R_magnitude);
   // factor 2: direction uniform
   if (K > 1) target += -0.5 * square((norm2(z) - 1) / 0.1);
   if (proper_stand_ins) {
@@ -56,14 +64,31 @@ model {
   } else {
     target += -log(sigma);                   // Jeffreys prior on the noise; alpha flat
   }
-  if (!prior_only)
-    y ~ normal(alpha + Xc * b, sigma);
+  if (!prior_only) {
+    if (K == 1)                              // the sign of R, + or - with probability 1/2
+      target += log_mix(0.5, normal_lpdf(y | alpha + Xc * b_magnitude, sigma),
+                             normal_lpdf(y | alpha - Xc * b_magnitude, sigma));
+    else
+      y ~ normal(alpha + Xc * b_magnitude, sigma);
+  }
 }
 generated quantities {
+  // the sign of R (K = 1 only), drawn with the probability its likelihood gives it
+  real sign_of_R = 1;
+  if (K == 1) {
+    real log_odds_plus = 0;
+    if (!prior_only)
+      log_odds_plus = normal_lpdf(y | alpha + Xc * b_magnitude, sigma)
+                      - normal_lpdf(y | alpha - Xc * b_magnitude, sigma);
+    sign_of_R = bernoulli_logit_rng(log_odds_plus) ? 1 : -1;
+  }
+  real R = sign_of_R * R_magnitude;          // the overall correlation (signed when K = 1)
+  real f = sign_of_R * f_magnitude;          // Cohen's f (signed when K = 1)
+  vector[K] b = sign_of_R * b_magnitude;     // the coefficients
   // per observation: log-likelihood (for loo) and a predicted value (for pp_check)
   vector[N] log_lik;
   array[N] real y_rep;
-  real R_squared = square(R);               // population explained share
+  real R_squared = square(R_magnitude);      // population explained share
   {
     vector[N] mu = alpha + Xc * b;
     for (n in 1:N) log_lik[n] = normal_lpdf(y[n] | mu[n], sigma);

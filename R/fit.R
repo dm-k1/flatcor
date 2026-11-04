@@ -4,7 +4,7 @@
 ## The Stan model samples the prior in its own coordinates: R and a
 ## direction (uniform), with the coefficients computed from them. Sampling
 ## the coefficients directly misses the prior's peak at zero for larger k
-## (objective-bayes/validation/01_prior_and_posterior.R).
+## (objective-bayes, studies 1 and 3).
 
 compiled_models <- new.env()   # compile once per session
 

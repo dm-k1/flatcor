@@ -15,7 +15,7 @@
 ## on the length f of the effect in noise units. flat_r and flat_partial_r also
 ## have a closed form through g-priors, and so does flat_r_squared for k >= 3
 ## (a g-prior mixture whose hyperprior is computed once per k); these are
-## faster. The block route reproduces all of them (objective-bayes/validation/02, check A4),
+## faster. The block route reproduces all of them (objective-bayes, study 2, check 2.5),
 ## and is the one used for flat_r_squared with one predictor.
 
 log_sum_exp <- function(log_values) {
@@ -89,7 +89,7 @@ log_bayes_factor_flat_r_vs_intercept_only <- function(explained_share, sample_si
 }
 
 ## g ~ Inverse-Gamma(1, n/2) on a log-g grid: the scale of both priors
-## (objective-bayes/docs/2_how_it_calculates.md, section 8: g/n = share x W, W ~ IG(1, 1/2)).
+## (objective-bayes/docs/appendix/A_derivations.md, section 8: g/n = share x W, W ~ IG(1, 1/2)).
 ## Each weight is the IG density times g times the step (the step is in log g).
 inverse_gamma_g_grid <- function(sample_size, grid_points_g) {
   log_g_values <- seq(log(1e-6), log(1e10), length.out = grid_points_g)
@@ -120,7 +120,7 @@ log_bayes_factor_flat_partial_r_vs_intercept_only <- function(explained_share, s
 
 ## flat_r_squared for k >= 3, closed form: R^2 ~ Beta(1, 1) with a uniform
 ## direction is the g-prior mixture g/n = t = B W, B ~ Beta(1, k/2 - 1),
-## W ~ Inverse-Gamma(1, 1/2) (objective-bayes/docs/2_how_it_calculates.md, section 8). The
+## W ~ Inverse-Gamma(1, 1/2) (objective-bayes/docs/appendix/A_derivations.md, section 8). The
 ## density of t, p(t) = E[B exp(-B / (2t))] / (2 t^2), depends only on k: it is
 ## computed once per k (integrate() over B at each point of a log-t grid) and
 ## kept, so each Bayes factor is one sum over the grid, as for flat_partial_r.
@@ -174,7 +174,7 @@ log_bayes_factor_shape_vs_intercept_only <- function(explained_share, sample_siz
   ## The grid: fine around the peak of the likelihood ratio, as in the
   ## conditional test. With few residual degrees of freedom (n - k < 10) the
   ## ratio is broad and, when R^2 is near 1, the peak grid alone misses its
-  ## tail (objective-bayes/validation/02, check B2b): then also 40 points per decade of f from
+  ## tail (objective-bayes, study 5, check 5.3): then also 40 points per decade of f from
   ## 1e-8 to 1e8.
   r_squared <- pmin(explained_share, 1 - 1e-12)
   m       <- sample_size - 2
@@ -205,6 +205,12 @@ log_bayes_factor_shape_vs_intercept_only <- function(explained_share, sample_siz
 #' @param prior \code{"flat_partial_r"} (the default), \code{"flat_r"} or
 #'   \code{"flat_r_squared"}.
 #' @return The log Bayes factor.
+#' @details Checked against a 200-bit ground truth (objective-bayes, study 2,
+#'   check 2.2): within 1e-12 for ordinary evidence. Where the evidence is
+#'   astronomical (R-squared = .99999 with n = 10^6, a log Bayes factor of
+#'   about 5.8 million) the closed form loses precision, to a relative error of
+#'   about 5e-7 (an absolute error of up to 3 on the log scale), which does not
+#'   change any conclusion.
 #' @examples
 #' log_bayes_factor_vs_intercept_only(0.2, 50, 3, prior = "flat_partial_r")
 #' log_bayes_factor_vs_intercept_only(0.2, 50, 3, prior = "flat_r_squared")
@@ -254,8 +260,8 @@ extract_predictors_and_outcome <- function(model) {
 #'   likely, R-squared ~ Beta(k/2, 1)), \code{"flat_r"} (R-squared ~
 #'   Beta(1/2, 1) for every k) or \code{"flat_r_squared"} (R-squared ~
 #'   Beta(1, 1) for every k). The default is \code{"flat_partial_r"}, the
-#'   prior the validation recommends; the comparison is in
-#'   \code{docs/3_comparison.md}.
+#'   prior the validation recommends
+#'   (\url{https://github.com/dm-k1/objective-bayes}).
 #' @return The Bayes factor of model A against model B.
 #' @examples
 #' bayes_factor_models(lm(mpg ~ wt + hp, mtcars), lm(mpg ~ wt, mtcars),
