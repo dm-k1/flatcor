@@ -2,7 +2,7 @@
 ##  Example: flatcor on one dataset, start to finish
 ##  Estimation (Stan), then Bayes factors for any model comparison, with the
 ##  three priors side by side: flat_partial_r, flat_r and flat_r_squared.
-##  The default is flat_partial_r; prior = selects the others (docs/0_overview.md).
+##  The default is flat_partial_r; prior = selects the others (see the README of https://github.com/dm-k1/objective-bayes).
 ## =====================================================================
 library(flatcor)   # install once: remotes::install_github("dm-k1/flatcor")
 library(ggplot2)
@@ -30,7 +30,7 @@ bayesplot::mcmc_trace(full_model$draws)   # trace plots (any bayesplot plot work
 
 ## The three priors next to the ordinary estimates: at n = 60 with three
 ## predictors each prior pulls the estimates toward zero, by a different amount
-## (docs/4_validation.md, study 07)
+## (objective-bayes, study 9)
 priors <- c("flat_partial_r", "flat_r", "flat_r_squared")
 other_fits <- lapply(c(flat_r = "flat_r", flat_r_squared = "flat_r_squared"), function(prior)
   fit_regression(y ~ x1 + x2 + x3, data = my_data, prior = prior, chains = 4,

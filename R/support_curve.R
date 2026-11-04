@@ -19,7 +19,7 @@
 ##                exp(-n f^2/2) E_c[I(sqrt(n) r f c)] / I(0),  m = n - k + q - 2,
 ##                averaged over the effect's direction within the term
 ## Both depend on the data only through the sample partial correlation (or
-## partial R^2), n and k. objective-bayes/docs/2_how_it_calculates.md, section 10.
+## partial R^2), n and k. objective-bayes/docs/appendix/A_derivations.md, section 10.
 
 ## The design columns of a term, or one design column, of an lm() fit
 columns_of_name <- function(lm_fit, name) {

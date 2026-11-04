@@ -18,7 +18,7 @@ whatever the number of predictors (a = k/2).
 \item \code{"flat_r_squared"}: R-squared flat for every k (a = 1).
 }
 The default is \code{"flat_partial_r"}, the prior the validation recommends
-(\code{objective-bayes/docs/3_comparison.md}); a function that uses it because no prior was
+(\url{https://github.com/dm-k1/objective-bayes}); a function that uses it because no prior was
 given says so once per session. All three divide
 the total over the predictors with no preference:
 P(total) x P(this combination | total) x unit conversion.

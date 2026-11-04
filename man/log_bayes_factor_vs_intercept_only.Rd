@@ -31,6 +31,14 @@ are R-squared ~ Beta(a, 1) with a uniform direction: \code{"flat_partial_r"}
 likely), \code{"flat_r"} (a = 1/2, R flat) and \code{"flat_r_squared"}
 (a = 1, R-squared flat).
 }
+\details{
+Checked against a 200-bit ground truth (objective-bayes, study 2,
+check 2.2): within 1e-12 for ordinary evidence. Where the evidence is
+astronomical (R-squared = .99999 with n = 10^6, a log Bayes factor of
+about 5.8 million) the closed form loses precision, to a relative error of
+about 5e-7 (an absolute error of up to 3 on the log scale), which does not
+change any conclusion.
+}
 \examples{
 log_bayes_factor_vs_intercept_only(0.2, 50, 3, prior = "flat_partial_r")
 log_bayes_factor_vs_intercept_only(0.2, 50, 3, prior = "flat_r_squared")
