@@ -1,0 +1,9 @@
+.Rhistory
+.RData
+.Rproj.user/
+.DS_Store
+Rplots.pdf
+inst/stan/*.rds
+inst/stan/flatcor
+*.Rcheck/
+flatcor_*.tar.gz
