@@ -1,3 +1,19 @@
+# flatcor 1.0.2
+
+- `log_bayes_factor_conditional()` with `prior = "flat_r"` or
+  `"flat_r_squared"` stopped with an error when the partial correlation was
+  so near 1 that every effect on its grid exceeded f = 100 (for example
+  r = .99999 with n = 1000). It now works.
+- With few residual degrees of freedom (n - k < 10) and a partial correlation
+  near 1, the conditional test's grid missed the broad tail of the likelihood
+  ratio, an error of up to 0.02 on the log scale. It now adds a wide grid,
+  as the whole-model test already did; the error is below about 3e-4.
+- `bayes_factor_models()` and `bayes_factor_per_term()` stop with a clear
+  message for a model without an intercept (before, `bayes_factor_models()`
+  dropped the first predictor and returned a wrong Bayes factor).
+- `bayes_factor_per_term(test = "joint")` works with a tibble.
+- `pp_check()` no longer fails when `ndraws` exceeds the number of draws.
+
 # flatcor 1.0.1
 
 - With one predictor, the Stan model now samples the size of R on (0, 1) and

@@ -229,3 +229,34 @@ test_that("per-term table works with every prior", {
   expect_true(all(partial$BF10 > 0))
   expect_false(isTRUE(all.equal(partial$BF10, bayes_factor_per_term(y ~ x1 + x2 + x3, example_data, prior = "flat_r")$BF10)))
 })
+
+test_that("conditional test with few residual degrees of freedom and r near 1", {
+  ## references by adaptive integration over f (the likelihood ratio and the
+  ## prior's density each by integrate()); the peak grid alone was off by up to 0.02
+  expect_equal(flat_partial_r_conditional(0.9999, 7, 3), 5.9166, tolerance = 5e-4 / 5.9166)
+  expect_equal(flat_partial_r_conditional(0.99999, 6, 2), 6.9472, tolerance = 5e-4 / 6.9472)
+  expect_equal(flat_r_conditional(0.9999, 7, 3), 4.8417, tolerance = 5e-4 / 4.8417)
+  expect_equal(log_bayes_factor_conditional(0.9999, 7, 3, prior = "flat_r_squared"), 5.5208,
+               tolerance = 5e-4 / 5.5208)
+})
+
+test_that("conditional test: a partial correlation so near 1 that f > 100 works for every prior", {
+  for (prior in c("flat_partial_r", "flat_r", "flat_r_squared"))
+    expect_gt(log_bayes_factor_conditional(0.99999, 1000, 3, prior = prior), 5000)
+})
+
+test_that("a model without an intercept stops with a clear message", {
+  expect_error(bayes_factor_models(lm(y ~ 0 + x1, example_data), lm(y ~ 1, example_data),
+                                   prior = "flat_r"), "need an intercept")
+  expect_error(bayes_factor_per_term(y ~ 0 + x1 + x2, example_data, prior = "flat_r"),
+               "needs a model with an intercept")
+})
+
+test_that("the joint test takes a tibble with missing values", {
+  skip_if_not_installed("tibble")
+  with_missing <- transform(example_data, x3 = replace(x3, c(3, 8), NA))
+  expect_equal(suppressWarnings(bayes_factor_per_term(y ~ x1 + x2 + x3, tibble::as_tibble(with_missing),
+                                                      prior = "flat_r", test = "joint")),
+               suppressWarnings(bayes_factor_per_term(y ~ x1 + x2 + x3, with_missing,
+                                                      prior = "flat_r", test = "joint")))
+})
