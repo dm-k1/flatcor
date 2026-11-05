@@ -31,7 +31,8 @@ coefficient).}
 \item{points_f, points_share}{Grid sizes: for f, around the peak of the
 likelihood, and for the share, inside the prior. With the defaults the
 error is below about 2e-4 on the log scale for n = 50 to 1e6, k = 1 to 30
-(against \code{stats::integrate()}, objective-bayes, study 2, check 2.12).}
+(against \code{stats::integrate()}, objective-bayes, study 2, check 2.12),
+and below about 3e-4 with few residual degrees of freedom (n - k < 10).}
 }
 \value{
 The log Bayes factor for an effect against no effect.

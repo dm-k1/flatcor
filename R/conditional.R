@@ -58,7 +58,9 @@ log_peak_integral <- function(b, m, half_width = 12, points = 241) {
 prior_cdf_of_f <- function(f_values, number_of_predictors, points_share, number_of_columns = 1,
                            shape = 1 / 2) {
   if (number_of_predictors == number_of_columns) return((f_values^2 / (1 + f_values^2))^shape)
-  smallest_share <- 1e-4 * min(f_values[f_values > 0])^2
+  ## (at most 1e-4: when every f is above 100, as with a partial correlation
+  ## near 1, the grid must still start below share 1)
+  smallest_share <- min(1e-4, 1e-4 * min(f_values[f_values > 0])^2)
   logit_edges <- seq(stats::qlogis(smallest_share), 25, length.out = points_share)
   share_probability <- diff(c(0, stats::pbeta(stats::plogis(logit_edges), number_of_columns / 2,
                                               (number_of_predictors - number_of_columns) / 2), 1))
@@ -144,10 +146,16 @@ log_bayes_factor_from_prior_cdf_of_f <- function(partial_r, sample_size, number_
   ##    negligible. The grid follows the peak, so it stays fine enough when n
   ##    is large. For a block the peak lies lower, by at most sqrt(q) widths
   ##    (the noncentral chi-square's mean exceeds its noncentrality by q).
+  ##    With few residual degrees of freedom (n - k < 10) the ratio is broad
+  ##    and, when r is near 1, the peak grid alone misses its tail, as for the
+  ##    whole model (R/bayes_factor.R): then also 80 points per decade of f
+  ##    from 1e-8 to 1e8 (40, as there, leaves an error of up to 7e-4).
   peak_f  <- sqrt(m / sample_size) * abs(partial_r) / sqrt(1 - partial_r^2)
   width_f <- 1 / sqrt(sample_size * (1 - partial_r^2))
   f_edges <- seq(max(0, peak_f - (15 + 2 * sqrt(number_of_columns - 1)) * width_f),
                  peak_f + 15 * width_f, length.out = points_f + 1)
+  if (sample_size - number_of_predictors < 10)
+    f_edges <- sort(unique(c(f_edges, 0, 10^seq(-8, 8, length.out = 1281))))
   f_middles <- (f_edges[-1] + f_edges[-length(f_edges)]) / 2
 
   ## 2. The likelihood ratio in the middle of each cell (for one column: both
@@ -189,7 +197,8 @@ log_bayes_factor_from_prior_cdf_of_f <- function(partial_r, sample_size, number_
 #' @param points_f,points_share Grid sizes: for f, around the peak of the
 #'   likelihood, and for the share, inside the prior. With the defaults the
 #'   error is below about 2e-4 on the log scale for n = 50 to 1e6, k = 1 to 30
-#'   (against \code{stats::integrate()}, objective-bayes, study 2, check 2.12).
+#'   (against \code{stats::integrate()}, objective-bayes, study 2, check 2.12),
+#'   and below about 3e-4 with few residual degrees of freedom (n - k < 10).
 #' @return The log Bayes factor for an effect against no effect.
 #' @examples
 #' log_bayes_factor_conditional(0.2, sample_size = 100, number_of_predictors = 3,

@@ -242,6 +242,10 @@ extract_predictors_and_outcome <- function(model) {
     predictors <- model$predictors
     outcome    <- model$outcome
   } else {
+    ## without an intercept the first column below would be a predictor
+    if (attr(terms(model), "intercept") != 1)
+      stop("Both models need an intercept; ", deparse(formula(model)), " has none.",
+           call. = FALSE)
     if (!is.null(model$na.action))
       warning(sprintf("%d rows with a missing value were left out of %s; it uses n = %d.",
                       length(model$na.action), deparse(formula(model)), nobs(model)),
@@ -307,6 +311,8 @@ bayes_factor_per_term <- function(formula, data, prior = "flat_partial_r",
   prior <- check_prior(prior, defaulted = missing(prior))
   test  <- match.arg(test)
   full_model  <- lm(formula, data)
+  if (attr(terms(full_model), "intercept") != 1)
+    stop("bayes_factor_per_term() needs a model with an intercept.")
   warn_dropped_rows(data, nobs(full_model))
   full_model$na.action <- NULL   # warned once here, not again per term
   ## an aliased column (e.g. x3 = x1 + x2) gets no coefficient and would still
@@ -317,8 +323,9 @@ bayes_factor_per_term <- function(formula, data, prior = "flat_partial_r",
          paste(aliased_columns, collapse = ", "), ". Remove them from the formula.")
   ## the reduced models use the full model's rows: lm() drops rows with a
   ## missing value in any term, so without the full model's rows a term's
-  ## missing values would change the rows of the model without it
-  rows_of_full_model <- data[row.names(model.frame(full_model)), , drop = FALSE]
+  ## missing values would change the rows of the model without it (a tibble
+  ## cannot be indexed by row name, so as a data frame)
+  rows_of_full_model <- as.data.frame(data)[row.names(model.frame(full_model)), , drop = FALSE]
   term_labels <- attr(terms(formula), "term.labels")
   design      <- model.matrix(full_model)
   columns_of_term <- split(colnames(design)[-1], attr(design, "assign")[-1])

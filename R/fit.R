@@ -139,7 +139,7 @@ loo.flatcor_fit <- function(x, cores = 1, ...) {
 #' @param ... Passed to \code{bayesplot::ppc_dens_overlay()}.
 #' @exportS3Method bayesplot::pp_check
 pp_check.flatcor_fit <- function(object, ndraws = 50, ...) {
-  shown <- sample(nrow(object$y_rep), ndraws)
+  shown <- sample(nrow(object$y_rep), min(ndraws, nrow(object$y_rep)))
   bayesplot::ppc_dens_overlay(object$outcome, object$y_rep[shown, , drop = FALSE], ...)
 }
 

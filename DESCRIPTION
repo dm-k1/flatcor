@@ -1,6 +1,6 @@
 Package: flatcor
 Title: Objective Bayes for Linear Regression with Flat Correlations
-Version: 1.0.1
+Version: 1.0.2
 Authors@R:
     person("Diemithry M.", "Kloppenburg", email = "diemithrykloppenburg@hotmail.com",
            role = c("aut", "cre"))
