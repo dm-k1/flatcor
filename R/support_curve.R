@@ -4,11 +4,10 @@
 ## For one coefficient: how much better each possible partial correlation
 ## explains the data than zero does. Report next to any Bayes factor that
 ## favours "no effect": it shows which effect sizes were ruled out and
-## which weren't. The peak of the curve is the most any Bayes factor could
-## be; the conditional Bayes factor is exactly this curve averaged over the
-## prior (R/conditional.R).
+## which weren't. No prior enters, so the curve is the same under all three
+## priors; the peak is the most any Bayes factor for this effect could be.
 ##
-## Exact: it is the likelihood ratio of the conditional test, with the other
+## Exact: it is the likelihood ratio of R/likelihood.R, with the other
 ## coefficients and the intercept integrated out over flat priors and the
 ## noise over 1/sigma, so no plug-in noise level. A partial correlation rho
 ## means an effect of f = rho / sqrt(1 - rho^2) in noise units (with the
@@ -34,7 +33,7 @@ columns_of_name <- function(lm_fit, name) {
 }
 
 ## The sample partial R^2 of some design columns given all the others, with
-## n and k: all the conditional test needs from the data
+## n and k: all the likelihood ratio needs from the data
 partial_fit_of_columns <- function(lm_fit, columns) {
   design_matrix <- model.matrix(lm_fit)
   if (colnames(design_matrix)[1] != "(Intercept)")
@@ -52,9 +51,9 @@ partial_fit_of_columns <- function(lm_fit, columns) {
 #'
 #' Reporting next to a Bayes factor that favours "no effect": which effect
 #' sizes the data can and cannot tell apart from zero. Exact: the likelihood
-#' ratio of the conditional test, with the noise level and the other
-#' coefficients integrated out (no plug-in values). The conditional Bayes
-#' factor is this curve averaged over the prior. For a term with several
+#' ratio of each partial correlation against zero, with the noise level and
+#' the other coefficients integrated out (no plug-in values). No prior enters,
+#' so it is the same under all three priors. For a term with several
 #' columns (a factor with more than two levels) use
 #' \code{support_per_partial_r_squared()}.
 #' @param lm_fit A fitted \code{lm()} with an intercept.
@@ -89,10 +88,10 @@ support_per_partial_correlation <- function(lm_fit, column_name,
 #' with any number of columns (a factor with more than two levels, an
 #' interaction): which sizes of the term's effect, as its partial R-squared
 #' given the other predictors, the data can and cannot tell apart from zero.
-#' Exact, and averaged over the direction of the effect within the term, as in
-#' the block conditional test, whose Bayes factor is this curve averaged over
-#' the prior. For a one-column term it is the signed curve averaged over the
-#' two signs.
+#' Exact, and averaged over the direction of the effect within the term. For
+#' a one-column term it is the signed curve averaged over the two signs. With
+#' every column of the model as the term, the curve averaged over the prior
+#' is the model's Bayes factor against the intercept-only model.
 #' @param lm_fit A fitted \code{lm()} with an intercept.
 #' @param term A term label (such as \code{"group"}) or design-matrix columns.
 #' @param partial_r_squared The partial R-squared values to evaluate.

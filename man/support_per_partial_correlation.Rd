@@ -24,9 +24,9 @@ A data frame with \code{partial_correlation} and \code{support_vs_zero}.
 \description{
 Reporting next to a Bayes factor that favours "no effect": which effect
 sizes the data can and cannot tell apart from zero. Exact: the likelihood
-ratio of the conditional test, with the noise level and the other
-coefficients integrated out (no plug-in values). The conditional Bayes
-factor is this curve averaged over the prior. For a term with several
+ratio of each partial correlation against zero, with the noise level and
+the other coefficients integrated out (no plug-in values). No prior enters,
+so it is the same under all three priors. For a term with several
 columns (a factor with more than two levels) use
 \code{support_per_partial_r_squared()}.
 }

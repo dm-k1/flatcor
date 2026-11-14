@@ -24,11 +24,13 @@ the total over the predictors with no preference:
 P(total) x P(this combination | total) x unit conversion.
 }
 \details{
-Main functions: \code{fit_regression()} (estimation),
-\code{bayes_factor_models()} and \code{bayes_factor_per_term()}
-(Bayes factors), \code{log_bayes_factor_vs_intercept_only()} and
-\code{log_bayes_factor_conditional()} (the formulas behind them),
-\code{draw_coefficients_from_prior()} (the prior as a recipe).
+Main functions: \code{bayes_factor_models()} (the Bayes factor between two
+models), \code{fit_regression()} (the posterior),
+\code{log_bayes_factor_vs_intercept_only()} (the formula behind the Bayes
+factors), \code{support_per_partial_correlation()} and
+\code{support_per_partial_r_squared()} (the likelihood of each effect size
+against zero, no prior), \code{draw_coefficients_from_prior()} (the prior
+as a recipe).
 }
 \seealso{
 Useful links:

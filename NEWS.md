@@ -1,3 +1,33 @@
+# flatcor 2.0.0
+
+flatcor now does two things, the same way for all three priors: the Bayes
+factor between two models, and the posterior.
+
+- Removed `log_bayes_factor_conditional()`, the conditional test of one
+  coefficient or term. It is a Bayes factor of one model only under flat
+  partial r (it equals the Savage–Dickey ratio of the full model); under flat
+  R and flat R-squared it is not, so it cannot be the test for all three.
+- Removed `bayes_factor_per_term()`. The evidence for a term is the model with
+  it against the model without it: `bayes_factor_models(full, reduced)`.
+- The support curves (`support_per_partial_correlation()`,
+  `support_per_partial_r_squared()`, `support_regions()`) stay. They use no
+  prior, so they are the same under all three priors; their help pages no
+  longer refer to the conditional test.
+- One route computes the whole-model Bayes factor for all three priors: the
+  likelihood ratio of the model's columns against none, averaged over
+  R-squared ~ Beta(a, 1) by `integrate()` over log f, centred on the peak (as
+  BayesFactor computes its regression Bayes factor over log g). Only a
+  differs between the priors. It replaces three prior-specific closed forms,
+  which had grid errors of up to 3e-5 (flat R) and 5e-4 (flat R-squared at
+  n = 10^6); against adaptive integration of flat partial r's g-prior form
+  the new route is within 2e-7 on 174 settings. It is slower: about 0.2 s
+  per Bayes factor with more than one predictor (10 ms with one).
+- The likelihood ratio behind the support curves and the Bayes factors moved
+  to `R/likelihood.R`. Its inner integral now starts at zero and uses
+  Simpson's rule, which keeps it smooth with one residual degree of freedom
+  (within 6e-8 of the exact hypergeometric series), and `besselI()` is only
+  called where its value is used (it is slow at large arguments).
+
 # flatcor 1.0.2
 
 - `log_bayes_factor_conditional()` with `prior = "flat_r"` or
