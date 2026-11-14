@@ -14,8 +14,8 @@
 ##
 ## Two uses: the whole model's Bayes factor against the intercept-only model is
 ## this ratio with q = k averaged over the prior on f (R/bayes_factor.R), and
-## the support curves show it as it is (R/support_curve.R).
-## objective-bayes/docs/appendix/A_derivations.md.
+## the support curves show it as it is (R/support_curve.R). Derivation:
+## objective-bayes/docs/appendix/A_derivations.md, section 10.
 
 ## log I(b) for a vector of b: a grid around the peak of the integrand
 log_peak_integral <- function(b, m, half_width = 12, points = 241) {

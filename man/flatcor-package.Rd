@@ -17,17 +17,17 @@ whatever the number of predictors (a = k/2).
 \item \code{"flat_r"}: the multiple correlation R flat for every k (a = 1/2).
 \item \code{"flat_r_squared"}: R-squared flat for every k (a = 1).
 }
-The default is \code{"flat_partial_r"}, the prior the validation recommends
-(\url{https://github.com/dm-k1/objective-bayes}); a function that uses it because no prior was
-given says so once per session. All three divide
+The default is \code{"flat_partial_r"}; a function that uses it because no
+prior was given says so once per session. The validation of the three
+priors is at \url{https://github.com/dm-k1/objective-bayes}. All three divide
 the total over the predictors with no preference:
 P(total) x P(this combination | total) x unit conversion.
 }
 \details{
 Main functions: \code{bayes_factor_models()} (the Bayes factor between two
 models), \code{fit_regression()} (the posterior),
-\code{log_bayes_factor_vs_intercept_only()} (the formula behind the Bayes
-factors), \code{support_per_partial_correlation()} and
+\code{log_bayes_factor_vs_intercept_only()} (each model against the
+intercept-only model, the route behind every Bayes factor), \code{support_per_partial_correlation()} and
 \code{support_per_partial_r_squared()} (the likelihood of each effect size
 against zero, no prior), \code{draw_coefficients_from_prior()} (the prior
 as a recipe).

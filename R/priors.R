@@ -18,9 +18,9 @@
 ## uniform direction), so they differ only in the shape a of R-squared ~
 ## Beta(a, 1). On R that is the density 2a R^(2a - 1); with one predictor,
 ## flat_partial_r and flat_r are both flat on r.
-## The default is flat_partial_r, the prior the validation recommends
-## (the validation, https://github.com/dm-k1/objective-bayes). A function that uses it because no prior
-## was given says so, once per session, so the choice stays visible.
+## The default is flat_partial_r. A function that uses it because no prior
+## was given says so, once per session, so the choice stays visible. The
+## validation of the three priors: https://github.com/dm-k1/objective-bayes.
 
 prior_names   <- c("flat_partial_r", "flat_r", "flat_r_squared")
 default_prior <- "flat_partial_r"
