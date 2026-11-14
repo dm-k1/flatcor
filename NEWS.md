@@ -1,3 +1,10 @@
+# flatcor (development version)
+
+- The help pages and the package description no longer say that the
+  validation recommends flat partial r: the validation is being redone for
+  2.0.0, and the default stays flat partial r.
+- `stats::dt()` is no longer imported (it was unused).
+
 # flatcor 2.0.0
 
 flatcor now does two things, the same way for all three priors: the Bayes

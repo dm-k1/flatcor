@@ -16,7 +16,6 @@ importFrom(bayesplot,pp_check)
 importFrom(loo,loo)
 importFrom(stats,
   coef,
-  dt,
   formula,
   lm,
   model.frame,

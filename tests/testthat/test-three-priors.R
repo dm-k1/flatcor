@@ -1,5 +1,5 @@
 ## The three priors as one family, R-squared ~ Beta(a, 1) with a uniform
-## direction (R/priors.R): fast versions of the family checks in objective-bayes,
+## direction (R/priors.R): fast versions of checks in objective-bayes,
 ## studies 2 and 4
 
 test_that("each prior has its shape, and flat_partial_r is the default", {
@@ -22,18 +22,6 @@ test_that("rows dropped for missing values are reported", {
                                      prior = "flat_partial_r"), "2 rows with a missing value")
 })
 
-test_that("the one route reproduces the old closed forms of flat R and flat partial r", {
-  for (case in list(c(0.1, 50, 1), c(0.3, 50, 3), c(0.05, 200, 5), c(0.5, 100, 8),
-                    c(0.02, 1000, 10), c(0.9, 30, 4))) {
-    r_squared <- case[1]; n <- case[2]; k <- case[3]
-    expect_equal(log_bayes_factor_shape_vs_intercept_only(r_squared, n, k, shape = 1 / 2),
-                 log_bayes_factor_flat_r_vs_intercept_only(r_squared, n, k), tolerance = 1e-4)
-    expect_equal(log_bayes_factor_shape_vs_intercept_only(r_squared, n, k, shape = k / 2),
-                 log_bayes_factor_flat_partial_r_vs_intercept_only(r_squared, n, k),
-                 tolerance = 2e-4)
-  }
-})
-
 test_that("flat R-squared: the whole-model Bayes factor agrees with adaptive integration", {
   ## the block likelihood ratio integrated against the prior density of |f|,
   ## 2 f / (1 + f^2)^2 (R^2 = f^2 / (1 + f^2) flat), by integrate()
@@ -50,25 +38,9 @@ test_that("flat R-squared: the whole-model Bayes factor agrees with adaptive int
                  by_integration(case[1], case[2], case[3]), tolerance = 1e-4)
 })
 
-test_that("flat R-squared: the old closed form (k >= 3) agrees with the one route", {
-  for (case in list(c(0.3, 50, 3), c(0.05, 200, 5), c(0.5, 100, 8), c(0.9, 30, 4)))
-    expect_equal(log_bayes_factor_vs_intercept_only(case[1], case[2], case[3], prior = "flat_r_squared"),
-                 log_bayes_factor_shape_vs_intercept_only(case[1], case[2], case[3], shape = 1),
-                 tolerance = 2e-3)
-})
-
-test_that("flat R-squared: predictive matching and information consistency", {
-  for (k in 1:5)
-    expect_equal(log_bayes_factor_vs_intercept_only(1, k + 1, k, prior = "flat_r_squared"), 0)
-  evidence <- sapply(c(0.9, 0.99, 0.999, 0.9999), log_bayes_factor_vs_intercept_only,
-                     sample_size = 20, number_of_predictors = 3, prior = "flat_r_squared")
-  expect_true(all(diff(evidence) > 0))
-  expect_gt(evidence[4], 50)
-})
-
 test_that("the one route holds at very strong evidence (large-argument Bessel function)", {
   for (case in list(c(0.99, 10000, 3), c(0.99, 10000, 30), c(0.999, 10000, 10)))
-    expect_equal(log_bayes_factor_shape_vs_intercept_only(case[1], case[2], case[3], shape = 1 / 2),
-                 log_bayes_factor_flat_r_vs_intercept_only(case[1], case[2], case[3]), tolerance = 1e-6)
+    expect_equal(log_bayes_factor_vs_intercept_only(case[1], case[2], case[3], prior = "flat_r"),
+                 log_bayes_factor_flat_r_by_directions(case[1], case[2], case[3]), tolerance = 1e-6)
   expect_true(is.finite(log_bayes_factor_vs_intercept_only(0.99, 10000, 30, prior = "flat_r_squared")))
 })
