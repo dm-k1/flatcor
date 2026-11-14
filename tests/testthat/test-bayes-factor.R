@@ -1,8 +1,4 @@
-## Fast versions of objective-bayes/validation/02_bayes_factor.R
-
-## the conditional test for one prior, by name
-flat_r_conditional         <- function(...) log_bayes_factor_conditional(..., prior = "flat_r")
-flat_partial_r_conditional <- function(...) log_bayes_factor_conditional(..., prior = "flat_partial_r")
+## Fast versions of objective-bayes, study 2 (are the Bayes factors computed correctly?)
 
 example_data <- local({
   set.seed(42)
@@ -13,51 +9,15 @@ example_data <- local({
   data
 })
 
-test_that("the example's Bayes factors are unchanged (joint and conditional)", {
-  joint <- bayes_factor_per_term(y ~ x1 + x2 + x3, example_data, test = "joint", prior = "flat_r")
-  expect_equal(joint$BF10, c(18.696, 0.3827, 1.5872), tolerance = 1e-3)
-  conditional <- bayes_factor_per_term(y ~ x1 + x2 + x3, example_data, prior = "flat_r")
-  expect_equal(conditional$BF10, c(17.489, 0.3911, 1.1833), tolerance = 1e-3)
-  expect_equal(unique(conditional$test), "conditional")
+test_that("the example's Bayes factors for each predictor are unchanged (model against model)", {
+  full <- lm(y ~ x1 + x2 + x3, example_data)
+  without <- function(term) lm(update(formula(full), paste(". ~ . -", term)), example_data)
+  bayes_factors <- sapply(c("x1", "x2", "x3"), function(term)
+    bayes_factor_models(full, without(term), prior = "flat_r"))
+  expect_equal(unname(bayes_factors), c(18.696, 0.3827, 1.5872), tolerance = 1e-3)
 })
 
-test_that("conditional test: one predictor equals the joint test", {
-  for (case in list(c(0.3, 30), c(0.1, 100), c(0.5, 50)))
-    expect_equal(flat_r_conditional(case[1], case[2], 1),
-                 log_bayes_factor_flat_r_vs_intercept_only(case[1]^2, case[2], 1), tolerance = 1e-3)
-})
-
-test_that("conditional test: the grid agrees with adaptive integration, also for large n", {
-  ## k = 3: share ~ Beta(1/2, 1) gives the prior of |f| the density
-  ## asinh(1/f) - 1/sqrt(1 + f^2). The likelihood ratio by integrate() too:
-  ## exp(-n f^2/2) (I(b) + I(-b)) / (2 I(0)), each I(b) scaled by its peak.
-  log_I <- function(b, m) {
-    peak     <- (b + sqrt(b^2 + 4 * m)) / 2
-    log_peak <- m * log(peak) - peak^2 / 2 + b * peak
-    log_peak + log(integrate(function(v) exp(m * log(v) - v^2 / 2 + b * v - log_peak),
-                             max(0, peak - 40), peak + 40, rel.tol = 1e-10)$value)
-  }
-  by_integration <- function(partial_r, n) {
-    m <- n - 4
-    likelihood_ratio_times_prior <- Vectorize(function(f) {
-      b <- sqrt(n) * partial_r * f
-      mean(exp(-n * f^2 / 2 - log_I(0, m) + c(log_I(b, m), log_I(-b, m)))) *
-        (asinh(1 / f) - 1 / sqrt(1 + f^2))
-    })
-    peak  <- sqrt(m / n) * abs(partial_r) / sqrt(1 - partial_r^2)
-    width <- 1 / sqrt(n * (1 - partial_r^2))
-    breaks <- unique(pmax(0, peak + c(-15, -5, -2, 0, 2, 5, 15) * width))
-    log(sum(sapply(seq_len(length(breaks) - 1), function(i)
-      integrate(likelihood_ratio_times_prior, breaks[i], breaks[i + 1], rel.tol = 1e-8)$value)))
-  }
-  for (case in list(c(3, 200), c(0, 1e4), c(2, 1e6))) {     # t-value, n
-    partial_r <- case[1] / sqrt(case[1]^2 + case[2] - 4)
-    expect_lt(abs(flat_r_conditional(partial_r, case[2], 3) -
-                  by_integration(partial_r, case[2])), 2e-4)
-  }
-})
-
-test_that("the joint test depends on what the others explain; the conditional test does not", {
+test_that("the Bayes factor for one predictor depends on what the others explain", {
   ## same evidence about x1 (partial correlation 0.2, n = 100, k = 3); the
   ## other predictors explain 5% or 60% (objective-bayes/docs/2_how_it_calculates.md, section 10)
   joint_bf <- function(r2_without) {
@@ -67,36 +27,9 @@ test_that("the joint test depends on what the others explain; the conditional te
   }
   expect_gt(joint_bf(0.05), 2)     # leans toward an effect
   expect_lt(joint_bf(0.60), 1)     # leans toward no effect, with the same x1 evidence
-  expect_equal(exp(flat_r_conditional(0.2, 100, 3)), 1.37, tolerance = 0.01)
 })
 
-test_that("multi-column terms get the block conditional test", {
-  data <- transform(example_data, group = factor(rep(c("a", "b", "c"), 20)))
-  result <- bayes_factor_per_term(y ~ x1 + group, data, prior = "flat_partial_r")
-  expect_equal(result$test, c("conditional", "conditional (block)"))
-  ## the block's partial R-squared, from the models with and without it
-  full <- lm(y ~ x1 + group, data)
-  partial_r_squared <- 1 - deviance(full) / deviance(lm(y ~ x1, data))
-  expect_equal(result$BF10[2], exp(flat_partial_r_conditional(
-    sqrt(partial_r_squared), 60, 3, number_of_columns = 2)))
-  expect_equal(bayes_factor_per_term(y ~ x1 + group, data, prior = "flat_partial_r", test = "joint")$test, c("joint", "joint"))
-})
-
-test_that("block conditional test: q = 1 is the one-column test, and q = k the joint test (flat R)", {
-  for (case in list(c(0.3, 30, 3), c(0.1, 1e4, 5))) {
-    expect_equal(flat_r_conditional(case[1], case[2], case[3], number_of_columns = 1),
-                 flat_r_conditional(case[1], case[2], case[3]))
-  }
-  ## a block of all k columns: its share is 1, so it is the joint flat R test
-  ## with flat priors on nothing else
-  for (case in list(c(0.2, 40, 2), c(0.05, 300, 3)))
-    expect_equal(flat_r_conditional(sqrt(case[1]), case[2], case[3],
-                                                     number_of_columns = case[3]),
-                 log_bayes_factor_flat_r_vs_intercept_only(case[1], case[2], case[3]),
-                 tolerance = 1e-3)
-})
-
-test_that("block conditional test: the likelihood ratio is exp(-n f^2/2) 1F1((m+1)/2; q/2; n r^2 f^2/2)", {
+test_that("the likelihood ratio of q columns is exp(-n f^2/2) 1F1((m+1)/2; q/2; n r^2 f^2/2)", {
   log_kummer <- function(a, c, z) {
     j <- 0:3000
     terms <- lgamma(a + j) - lgamma(a) - lgamma(c + j) + lgamma(c) - lgamma(j + 1) + j * log(z)
@@ -111,36 +44,10 @@ test_that("block conditional test: the likelihood ratio is exp(-n f^2/2) 1F1((m+
   }
 })
 
-test_that("block conditional test: does not depend on what the other predictors explain", {
-  set.seed(9)
-  data <- data.frame(x1 = rnorm(90), group = factor(rep(c("a", "b", "c"), 30)))
-  noise <- rnorm(90)
-  weak  <- transform(data, y = 0.1 * x1 + 0.3 * (group == "b") + noise)
-  ## residualise x1 out of the noise, so both datasets have the same partial R^2
-  ## for group; then let x1 explain much more in the second
-  strong <- transform(weak, y = y + 3 * x1)
-  expect_equal(bayes_factor_per_term(y ~ x1 + group, weak, prior = "flat_partial_r")$BF10[2],
-               bayes_factor_per_term(y ~ x1 + group, strong, prior = "flat_partial_r")$BF10[2], tolerance = 1e-6)
-  joint <- function(data) bayes_factor_per_term(y ~ x1 + group, data, prior = "flat_partial_r",
-                                                 test = "joint")$BF10[2]
-  expect_gt(abs(log(joint(weak)) - log(joint(strong))), 0.3)
-})
-
 test_that("an aliased column stops with a clear message", {
   aliased <- transform(example_data, x4 = x1 + x2)
-  expect_error(bayes_factor_per_term(y ~ x1 + x2 + x4, aliased, prior = "flat_r"), "aliased): x4")
   expect_error(bayes_factor_models(lm(y ~ x1 + x2 + x4, aliased), lm(y ~ 1, aliased), prior = "flat_r"),
                "linearly dependent")
-})
-
-test_that("a term with missing values: the model without it uses the same rows", {
-  with_missing <- transform(example_data, x3 = replace(x3, c(3, 8), NA))
-  complete_rows <- with_missing[-c(3, 8), ]
-  expect_warning(with_rows_dropped <- bayes_factor_per_term(y ~ x1 + x2 + x3, with_missing,
-                                                             prior = "flat_r", test = "joint"),
-                 "2 of 60 rows")
-  expect_equal(with_rows_dropped,
-               bayes_factor_per_term(y ~ x1 + x2 + x3, complete_rows, prior = "flat_r", test = "joint"))
 })
 
 test_that("rescaling or recoding predictors leaves the Bayes factor unchanged", {
@@ -196,8 +103,6 @@ test_that("flat partial r: the grid agrees with adaptive integration", {
 test_that("with one predictor flat partial r and flat R are the same", {
   expect_equal(log_bayes_factor_flat_partial_r_vs_intercept_only(0.09, 40, 1),
                log_bayes_factor_flat_r_vs_intercept_only(0.09, 40, 1), tolerance = 1e-4)
-  expect_equal(flat_partial_r_conditional(0.3, 40, 1),
-               flat_r_conditional(0.3, 40, 1), tolerance = 1e-4)
 })
 
 test_that("flat partial r: predictive matching and invariance", {
@@ -211,52 +116,34 @@ test_that("flat partial r: predictive matching and invariance", {
                                    prior = "flat_partial_r"), original)
 })
 
-test_that("flat partial r: the conditional test does not depend on k (flat partial r for every k)", {
-  ## the prior is the same for every k; only the residual degrees of freedom
-  ## n - k - 1 change, so at a fixed partial correlation the log Bayes factor
-  ## moves little with k (1.57, 1.53, 1.39 for k = 1, 3, 10)
-  by_k <- sapply(c(1, 3, 10), function(k) flat_partial_r_conditional(0.2, 200, k))
-  expect_lt(diff(range(by_k)), 0.25)
-  ## flat R's per-coefficient prior narrows with k, so its Bayes factor moves
-  ## more (1.57, 1.94, 1.90)
-  flat_r_by_k <- sapply(c(1, 3, 10), function(k) flat_r_conditional(0.2, 200, k))
-  expect_gt(diff(range(flat_r_by_k)), diff(range(by_k)))
-})
-
-test_that("per-term table works with every prior", {
-  partial <- bayes_factor_per_term(y ~ x1 + x2 + x3, example_data, prior = "flat_partial_r")
-  expect_equal(unique(partial$test), "conditional")
-  expect_true(all(partial$BF10 > 0))
-  expect_false(isTRUE(all.equal(partial$BF10, bayes_factor_per_term(y ~ x1 + x2 + x3, example_data, prior = "flat_r")$BF10)))
-})
-
-test_that("conditional test with few residual degrees of freedom and r near 1", {
-  ## references by adaptive integration over f (the likelihood ratio and the
-  ## prior's density each by integrate()); the peak grid alone was off by up to 0.02
-  expect_equal(flat_partial_r_conditional(0.9999, 7, 3), 5.9166, tolerance = 5e-4 / 5.9166)
-  expect_equal(flat_partial_r_conditional(0.99999, 6, 2), 6.9472, tolerance = 5e-4 / 6.9472)
-  expect_equal(flat_r_conditional(0.9999, 7, 3), 4.8417, tolerance = 5e-4 / 4.8417)
-  expect_equal(log_bayes_factor_conditional(0.9999, 7, 3, prior = "flat_r_squared"), 5.5208,
-               tolerance = 5e-4 / 5.5208)
-})
-
-test_that("conditional test: a partial correlation so near 1 that f > 100 works for every prior", {
-  for (prior in c("flat_partial_r", "flat_r", "flat_r_squared"))
-    expect_gt(log_bayes_factor_conditional(0.99999, 1000, 3, prior = prior), 5000)
-})
-
 test_that("a model without an intercept stops with a clear message", {
   expect_error(bayes_factor_models(lm(y ~ 0 + x1, example_data), lm(y ~ 1, example_data),
                                    prior = "flat_r"), "need an intercept")
-  expect_error(bayes_factor_per_term(y ~ 0 + x1 + x2, example_data, prior = "flat_r"),
-               "needs a model with an intercept")
 })
 
-test_that("the joint test takes a tibble with missing values", {
-  skip_if_not_installed("tibble")
-  with_missing <- transform(example_data, x3 = replace(x3, c(3, 8), NA))
-  expect_equal(suppressWarnings(bayes_factor_per_term(y ~ x1 + x2 + x3, tibble::as_tibble(with_missing),
-                                                      prior = "flat_r", test = "joint")),
-               suppressWarnings(bayes_factor_per_term(y ~ x1 + x2 + x3, with_missing,
-                                                      prior = "flat_r", test = "joint")))
+test_that("the one route agrees with adaptive integration where the old grid did not", {
+  ## flat partial r: the g-prior Bayes factor averaged over g ~ IG(1, n/2), by
+  ## integrate() over log g. At k = 20 and R-squared = .001 the fixed grid of
+  ## 2.0.0's first draft was off by 5e-4.
+  by_integration <- function(r_squared, n, k) {
+    log_integrand <- function(log_g) {
+      g <- exp(log_g)
+      (n - 1 - k) / 2 * log1p(g) - (n - 1) / 2 * log1p(g * (1 - r_squared)) +
+        log(n / 2) - log_g - n / (2 * g)
+    }
+    peak <- optimize(log_integrand, c(-40, 60), maximum = TRUE)$maximum
+    top <- log_integrand(peak)
+    breaks <- peak + c(-80, -20, -5, -1, 0, 1, 5, 20, 80)
+    top + log(sum(sapply(1:8, function(i)
+      integrate(function(x) exp(log_integrand(x) - top), breaks[i], breaks[i + 1],
+                rel.tol = 1e-12, subdivisions = 5000)$value)))
+  }
+  for (case in list(c(0.001, 1000, 20), c(0.3, 200, 8), c(0.5, 5, 3)))
+    expect_equal(log_bayes_factor_vs_intercept_only(case[1], case[2], case[3], prior = "flat_partial_r"),
+                 by_integration(case[1], case[2], case[3]), tolerance = 1e-6)
+})
+
+test_that("one residual degree of freedom works for every prior", {
+  for (prior in c("flat_partial_r", "flat_r", "flat_r_squared"))
+    expect_true(is.finite(log_bayes_factor_vs_intercept_only(0.5, 3, 1, prior = prior)))
 })

@@ -30,7 +30,7 @@ bayesplot::mcmc_trace(full_model$draws)   # trace plots (any bayesplot plot work
 
 ## The three priors next to the ordinary estimates: at n = 60 with three
 ## predictors each prior pulls the estimates toward zero, by a different amount
-## (objective-bayes, study 9)
+## (objective-bayes, study 5)
 priors <- c("flat_partial_r", "flat_r", "flat_r_squared")
 other_fits <- lapply(c(flat_r = "flat_r", flat_r_squared = "flat_r_squared"), function(prior)
   fit_regression(y ~ x1 + x2 + x3, data = my_data, prior = prior, chains = 4,
@@ -41,28 +41,22 @@ cbind(flat_partial_r = posterior_means(full_model),
       flat_r_squared = posterior_means(other_fits$flat_r_squared),
       ordinary       = coef(lm(y ~ x1 + x2 + x3, data = my_data))[c("x1", "x2", "x3")])
 
-## ---- 3. Bayes factor per predictor ----------------------------------
-## No Stan needed. Each predictor is tested on its own partial correlation
-## (the conditional test); test = "joint" compares the models with and without it
-bayes_factor_per_term(y ~ x1 + x2 + x3, my_data, prior = "flat_partial_r")
-bayes_factor_per_term(y ~ x1 + x2 + x3, my_data, prior = "flat_partial_r", test = "joint")
-## The three priors side by side. flat_partial_r keeps each coefficient's
-## partial correlation flat for any k; flat_r and flat_r_squared keep the total
-## flat, so each coefficient's prior narrows as predictors are added
-per_term_bf10 <- sapply(priors, function(prior)
-  bayes_factor_per_term(y ~ x1 + x2 + x3, my_data, prior = prior)$BF10)
-rownames(per_term_bf10) <- c("x1", "x2", "x3")
-per_term_bf10
-
-## ---- 4. Comparing any two models ------------------------------------
-## Takes fit_regression() fits or plain lm() fits: only R-squared, n and k matter
+## ---- 3. Comparing models ------------------------------------------
+## No Stan needed. Takes fit_regression() fits or plain lm() fits: only
+## R-squared, n and k matter
 bayes_factor_models(full_model, lm(y ~ x2 + x3, data = my_data),            # nested: evidence for x1
                     prior = "flat_partial_r")
 bayes_factor_models(full_model, lm(y ~ x4, data = my_data), prior = "flat_partial_r")   # non-nested
-sapply(priors, function(prior)                                              # every prior
-  bayes_factor_models(lm(y ~ x1 + x2 + x3, data = my_data), lm(y ~ 1, data = my_data), prior = prior))
 
-## ---- 5. What a null Bayes factor rests on ---------------------------
+## Evidence for each predictor: the model with it against the model without it
+full_lm <- lm(y ~ x1 + x2 + x3, data = my_data)
+without <- function(predictor) update(full_lm, paste(". ~ . -", predictor))
+priors_by_predictor <- sapply(priors, function(prior)
+  sapply(c("x1", "x2", "x3"), function(predictor)
+    bayes_factor_models(full_lm, without(predictor), prior = prior)))
+priors_by_predictor   # BF10 per predictor (rows) and prior (columns)
+
+## ---- 4. What a null Bayes factor rests on ---------------------------
 ## Which effect sizes can the data not tell apart from zero? (x2 here)
 support_x2 <- support_per_partial_correlation(lm(y ~ x1 + x2 + x3, data = my_data), "x2",
                                               partial_correlations = seq(-0.9, 0.9, by = 0.01))
@@ -84,7 +78,7 @@ support_group <- support_per_partial_r_squared(lm(y ~ x1 + x2 + x3 + group, data
                                                "group")
 support_regions(support_group, band = 3)
 
-## ---- 6. Comparison with the default (JZS / JASP) --------------------
+## ---- 5. Comparison with the default (JZS / JASP) --------------------
 ## Optional; needs the BayesFactor package
 if (requireNamespace("BayesFactor", quietly = TRUE)) {
   default_bf_x1 <- BayesFactor::lmBF(y ~ x1 + x2 + x3, data = my_data) /

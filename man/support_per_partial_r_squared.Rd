@@ -25,10 +25,10 @@ The block version of \code{support_per_partial_correlation()}, for a term
 with any number of columns (a factor with more than two levels, an
 interaction): which sizes of the term's effect, as its partial R-squared
 given the other predictors, the data can and cannot tell apart from zero.
-Exact, and averaged over the direction of the effect within the term, as in
-the block conditional test, whose Bayes factor is this curve averaged over
-the prior. For a one-column term it is the signed curve averaged over the
-two signs.
+Exact, and averaged over the direction of the effect within the term. For
+a one-column term it is the signed curve averaged over the two signs. With
+every column of the model as the term, the curve averaged over the prior
+is the model's Bayes factor against the intercept-only model.
 }
 \examples{
 support <- support_per_partial_r_squared(lm(mpg ~ wt + factor(cyl), mtcars), "factor(cyl)")

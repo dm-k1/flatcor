@@ -32,12 +32,16 @@ likely), \code{"flat_r"} (a = 1/2, R flat) and \code{"flat_r_squared"}
 (a = 1, R-squared flat).
 }
 \details{
-Checked against a 200-bit ground truth (objective-bayes, study 2,
-check 2.2): within 1e-12 for ordinary evidence. Where the evidence is
-astronomical (R-squared = .99999 with n = 10^6, a log Bayes factor of
-about 5.8 million) the closed form loses precision, to a relative error of
-about 5e-7 (an absolute error of up to 3 on the log scale), which does not
-change any conclusion.
+One route for every prior: the likelihood ratio of the model's
+columns against none, with the noise and the direction of the effect
+integrated out, averaged over R-squared ~ Beta(a, 1) by
+\code{stats::integrate()}. Checked on 174 settings (n = 3 to 10^6, k = 1
+to 50, R-squared from 10^-6 to .999999): for flat partial r within 2e-7
+of adaptive integration of its g-prior form; for flat R and flat
+R-squared within the error of the closed forms used up to 1.0.2, which
+were the less accurate side (refining them, or a third route, gives this
+route's value). The validation checks it against independent routes
+(objective-bayes, study 2).
 }
 \examples{
 log_bayes_factor_vs_intercept_only(0.2, 50, 3, prior = "flat_partial_r")
