@@ -1,4 +1,4 @@
-## The prior as a recipe gives R-squared ~ Beta(a, 1) (objective-bayes/docs/2_how_it_calculates.md, section 5)
+## The prior as a recipe gives R-squared ~ Beta(a, 1) (objective-bayes/docs/2_the_three_priors.md)
 test_that("flat R: implied R-squared is Beta(1/2, 1) for k = 1, 3, 10, correlated or not", {
   set.seed(1)
   correlated <- matrix(0.5, 3, 3); diag(correlated) <- 1

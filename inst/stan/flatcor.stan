@@ -16,26 +16,51 @@
 // and drawn in generated quantities. Sampling a signed R on (-1, 1) instead
 // would put a zero of the density at R = 0 whenever a > 1/2 (flat_r_squared:
 // density |R|), a wall the sampler cannot cross without divergent transitions.
+//
+// K = 0 is the intercept-only model: only alpha and sigma.
+//
+// Every density is written with target += and all its normalising constants,
+// because bayes_factor_models() estimates each model's marginal likelihood
+// from this program with bridgesampling, which needs them (Gronau, Singmann &
+// Wagenmakers, 2020). The intercept (flat) and the noise (1/sigma) have
+// improper priors; they are the same in every model, so their arbitrary
+// constant cancels in a Bayes factor.
+functions {
+  // the radial part of the direction's auxiliary density (see parameters),
+  // r^(K - 1) exp(-((r - 1) / 0.1)^2 / 2), for its normalising constant
+  real radial_density(real r, real r_complement, array[] real theta,
+                      array[] real x_r, array[] int x_i) {
+    return exp((x_i[1] - 1) * log(r) - 0.5 * square((r - 1) / 0.1));
+  }
+}
 data {
   int<lower=1> N;
-  int<lower=1> K;
+  int<lower=0> K;
   matrix[N, K] X;                 // predictors (centered here)
   vector[N] y;
   int<lower=0, upper=1> prior_only;      // 1: ignore y (sample the prior)
   int<lower=0, upper=1> proper_stand_ins; // 1: proper priors on alpha and sigma (for checks)
-  real<lower=0> r_squared_shape;         // a in R^2 ~ Beta(a, 1)
+  real<lower=0> r_squared_shape;         // a in R^2 ~ Beta(a, 1) (unused when K = 0)
 }
 transformed data {
   matrix[N, K] Xc;
   for (j in 1:K) Xc[, j] = X[, j] - mean(X[, j]);
   // Any square root of the predictor covariance works; Cholesky is the cheapest.
   // It turns a direction in "explained variance" units into predictor units.
-  matrix[K, K] root = cholesky_decompose(crossprod(Xc) / N);
+  matrix[K, K] root;
+  if (K > 0) root = cholesky_decompose(crossprod(Xc) / N);
+  // log of the normalising constant of z's density on R^K (K > 1): the
+  // surface area of the unit sphere, 2 pi^(K/2) / Gamma(K/2), times the
+  // integral of the radial part
+  real log_direction_constant = 0;
+  if (K > 1)
+    log_direction_constant = log2() + K / 2.0 * log(pi()) - lgamma(K / 2.0) +
+      log(integrate_1d(radial_density, 0, positive_infinity(), {0.0}, {0.0}, {K}, 1e-10));
 }
 parameters {
   real alpha;
   real<lower=0> sigma;
-  real<lower=0, upper=1> R_magnitude;    // |R|
+  vector<lower=0, upper=1>[K > 0 ? 1 : 0] R_size;   // |R|, absent when K = 0
   // the direction is z / |z|. Any density for z that depends only on its length
   // makes the direction uniform; this one keeps |z| near 1, away from 0, where
   // the direction would be undefined (Stan's unit_vector lets |z| reach 0,
@@ -43,24 +68,25 @@ parameters {
   vector[K > 1 ? K : 0] z;
 }
 transformed parameters {
+  real R_magnitude = K > 0 ? R_size[1] : 0;
   real f_magnitude = R_magnitude / sqrt(1 - square(R_magnitude));   // |Cohen's f|
   vector[K] direction;
   if (K == 1) direction = rep_vector(1, 1);
-  else        direction = z / norm2(z);
+  if (K > 1)  direction = z / norm2(z);
   // b' Sigma b = sigma^2 f^2; with one predictor this is |b|, its sign follows
-  vector[K] b_magnitude = sigma * f_magnitude * mdivide_right_tri_low(direction', root)';
+  vector[K] b_magnitude = rep_vector(0, K);
+  if (K > 0) b_magnitude = sigma * f_magnitude * mdivide_right_tri_low(direction', root)';
 }
 model {
   // factor 1: R^2 ~ Beta(a, 1), which is density 2a R^(2a - 1) on R in (0, 1)
-  // (flat for a = 1/2; with K = 1, flat_partial_r and flat_r both have a = 1/2)
-  if (r_squared_shape != 0.5) target += (2 * r_squared_shape - 1) * log(R_magnitude);
-  // factor 2: direction uniform
-  if (K > 1) target += -0.5 * square((norm2(z) - 1) / 0.1);
+  if (K > 0)
+    target += log(2 * r_squared_shape) + (2 * r_squared_shape - 1) * log(R_magnitude);
+  // factor 2: direction uniform (z's density, normalised)
+  if (K > 1) target += -0.5 * square((norm2(z) - 1) / 0.1) - log_direction_constant;
   if (proper_stand_ins) {
     // Checks that sample the prior, or simulate data from it, need proper priors
     // on alpha and sigma. R, f and the direction don't depend on these.
-    alpha ~ normal(0, 10);
-    sigma ~ lognormal(0, 1);
+    target += normal_lpdf(alpha | 0, 10) + lognormal_lpdf(sigma | 0, 1);
   } else {
     target += -log(sigma);                   // Jeffreys prior on the noise; alpha flat
   }
@@ -69,7 +95,7 @@ model {
       target += log_mix(0.5, normal_lpdf(y | alpha + Xc * b_magnitude, sigma),
                              normal_lpdf(y | alpha - Xc * b_magnitude, sigma));
     else
-      y ~ normal(alpha + Xc * b_magnitude, sigma);
+      target += normal_lpdf(y | alpha + Xc * b_magnitude, sigma);
   }
 }
 generated quantities {

@@ -1,11 +1,11 @@
 ## =====================================================================
 ##  Example: flatcor on one dataset, start to finish
-##  Estimation (Stan), then Bayes factors for any model comparison, with the
-##  three priors side by side: flat_partial_r, flat_r and flat_r_squared.
-##  The default is flat_partial_r; prior = selects the others (see the README of https://github.com/dm-k1/objective-bayes).
+##  Estimation, then Bayes factors for model comparisons, with the three
+##  priors side by side: flat_partial_r, flat_r and flat_r_squared. The
+##  default is flat_partial_r; prior = selects the others (the validation:
+##  https://github.com/dm-k1/objective-bayes). Everything runs on Stan.
 ## =====================================================================
 library(flatcor)   # install once: remotes::install_github("dm-k1/flatcor")
-library(ggplot2)
 
 ## ---- 1. Data ---------------------------------------------------------
 ## Three correlated predictors (x1 and x2 matter, x3 doesn't) and one
@@ -41,43 +41,27 @@ cbind(flat_partial_r = posterior_means(full_model),
       ordinary       = coef(lm(y ~ x1 + x2 + x3, data = my_data))[c("x1", "x2", "x3")])
 
 ## ---- 3. Comparing models ------------------------------------------
-## No Stan needed. Takes fit_regression() fits or plain lm() fits: only
-## R-squared, n and k matter
-bayes_factor_models(full_model, lm(y ~ x2 + x3, data = my_data),            # nested: evidence for x1
-                    prior = "flat_partial_r")
-bayes_factor_models(full_model, lm(y ~ x4, data = my_data), prior = "flat_partial_r")   # non-nested
-
-## Evidence for each predictor: the model with it against the model without it
+## Takes lm() fits (or fit_regression() fits); each model is fitted with the
+## prior and its marginal likelihood estimated by bridge sampling, so every
+## Bayes factor comes with a Monte Carlo error
 full_lm <- lm(y ~ x1 + x2 + x3, data = my_data)
+bayes_factor_models(full_lm, lm(y ~ x2 + x3, data = my_data), prior = "flat_partial_r", seed = 1)  # evidence for x1
+bayes_factor_models(full_lm, lm(y ~ x4, data = my_data), prior = "flat_partial_r", seed = 1)       # non-nested
+bayes_factor_models(full_lm, lm(y ~ 1, data = my_data), prior = "flat_partial_r", seed = 1)        # against the intercept-only model
+
+## Evidence for each predictor under each prior: the model with it against
+## the model without it
 without <- function(predictor) update(full_lm, paste(". ~ . -", predictor))
 priors_by_predictor <- sapply(priors, function(prior)
   sapply(c("x1", "x2", "x3"), function(predictor)
-    bayes_factor_models(full_lm, without(predictor), prior = prior)))
+    bayes_factor_models(full_lm, without(predictor), prior = prior, seed = 1)$bayes_factor))
 priors_by_predictor   # BF10 per predictor (rows) and prior (columns)
 
-## ---- 4. What a null Bayes factor rests on ---------------------------
-## Which effect sizes can the data not tell apart from zero? (x2 here)
-support_x2 <- support_per_partial_correlation(lm(y ~ x1 + x2 + x3, data = my_data), "x2",
-                                              partial_correlations = seq(-0.9, 0.9, by = 0.01))
-support_regions(support_x2, band = 3)   # better / can't tell / worse than zero
+## The Monte Carlo error directly: the same Bayes factor with other seeds
+sapply(1:5, function(seed)
+  bayes_factor_models(full_lm, without("x1"), prior = "flat_partial_r", seed = seed)$log_bayes_factor)
 
-ggplot(support_x2, aes(partial_correlation, support_vs_zero)) +
-  annotate("rect", xmin = -Inf, xmax = Inf, ymin = 1 / 3, ymax = 3, alpha = 0.15) +
-  geom_hline(yintercept = 1, linetype = "dotted") +
-  geom_line(linewidth = 1) +
-  scale_y_log10() +
-  labs(x = "true partial correlation of x2", y = "support compared with zero (log scale)",
-       title = "x2: which effect sizes can't be told apart from zero?",
-       subtitle = "grey band: within a factor 3 of zero")
-
-## A term with several columns (a factor with more than two levels): one curve
-## for the whole term, over its partial R-squared
-my_data$group <- factor(rep(c("a", "b", "c"), length.out = nrow(my_data)))
-support_group <- support_per_partial_r_squared(lm(y ~ x1 + x2 + x3 + group, data = my_data),
-                                               "group")
-support_regions(support_group, band = 3)
-
-## ---- 5. Comparison with the default (JZS / JASP) --------------------
+## ---- 4. Comparison with the default (JZS / JASP) --------------------
 ## Optional; needs the BayesFactor package
 if (requireNamespace("BayesFactor", quietly = TRUE)) {
   default_bf_x1 <- BayesFactor::lmBF(y ~ x1 + x2 + x3, data = my_data) /

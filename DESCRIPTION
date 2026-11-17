@@ -14,10 +14,10 @@ Description: Bayes factors and estimation for linear regression with
     is flat for any number of predictors), flat R (a = 1/2) and flat
     R-squared (a = 1). The default is flat partial r; the others are
     chosen with prior =. Their validation is at
-    https://github.com/dm-k1/objective-bayes. Each gives the Bayes factor
-    between any two linear models, which needs only R-squared, n and k, and
-    a posterior for estimation, which samples the prior in its own
-    coordinates (R and a direction) with Stan.
+    https://github.com/dm-k1/objective-bayes. One Stan model, which samples
+    the prior in its own coordinates (R and a direction), gives the
+    posterior for estimation and, through bridge sampling (bridgesampling),
+    the Bayes factor between any two linear models.
 License: MIT + file LICENSE
 Encoding: UTF-8
 Roxygen: list(markdown = TRUE)
@@ -26,14 +26,15 @@ Imports:
     MASS,
     stats,
     tools,
+    utils,
     posterior,
     loo,
-    bayesplot
+    bayesplot,
+    bridgesampling (>= 1.2.1)
 Suggests:
     cmdstanr,
     rstan,
     BayesFactor,
-    ggplot2,
     testthat (>= 3.0.0)
 URL: https://github.com/dm-k1/flatcor
 BugReports: https://github.com/dm-k1/flatcor/issues

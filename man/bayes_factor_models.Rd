@@ -4,25 +4,66 @@
 \alias{bayes_factor_models}
 \title{Bayes factor between any two linear models}
 \usage{
-bayes_factor_models(model_a, model_b, prior = "flat_partial_r")
+bayes_factor_models(
+  model_a,
+  model_b,
+  prior = "flat_partial_r",
+  chains = 4,
+  iter_warmup = 1000,
+  iter_sampling = 10000,
+  adapt_delta = 0.95,
+  seed = NULL,
+  method = "normal",
+  backend = default_backend()
+)
 }
 \arguments{
-\item{model_a, model_b}{Fits from \code{fit_regression()} or \code{lm()}.}
+\item{model_a, model_b}{Fits from \code{lm()} or \code{fit_regression()}.}
 
 \item{prior}{\code{"flat_partial_r"} (every correlation matrix equally
 likely, R-squared ~ Beta(k/2, 1)), \code{"flat_r"} (R-squared ~
 Beta(1/2, 1) for every k) or \code{"flat_r_squared"} (R-squared ~
 Beta(1, 1) for every k). The default is \code{"flat_partial_r"}.}
+
+\item{chains, iter_warmup, iter_sampling, adapt_delta}{Sampler settings for
+each model (the default draws are ten times those for estimation).}
+
+\item{seed}{A seed for the first model; the second uses \code{seed + 1}.}
+
+\item{method}{\code{"normal"} (the default) or \code{"warp3"}, passed to
+\code{bridgesampling::bridge_sampler()}.}
+
+\item{backend}{\code{"cmdstanr"} (default when installed) or \code{"rstan"}.}
 }
 \value{
-The Bayes factor of model A against model B.
+A \code{flatcor_bayes_factor}: \code{$bayes_factor} (model A
+against model B), \code{$log_bayes_factor}, \code{$error} (approximate
+SE of the log Bayes factor; \code{NA} for \code{"warp3"}), the two log
+marginal likelihoods and the divergent transitions of each fit.
 }
 \description{
-Nested or not, as long as both use the same outcome and data rows.
+Nested or not, as long as both use the same outcome and data rows. Each
+model is fitted with the chosen prior (\code{inst/stan/flatcor.stan}), its
+marginal likelihood is estimated by bridge sampling
+(\code{bridgesampling::bridge_sampler()}), and the Bayes factor is their
+ratio. A model with no predictors (\code{lm(y ~ 1)}) is the
+intercept-only model.
+}
+\details{
+The estimate has a Monte Carlo error. The reported error is
+bridgesampling's approximate error of the log Bayes factor (method
+\code{"normal"} only); it can be optimistic. To assess the error directly,
+run the function again with other seeds and look at the spread, which the
+bridgesampling authors recommend where it is affordable. Their largest
+worked example has 96 parameters (Gronau et al., 2017); a model here has
+k + 3 (k predictor columns: the intercept, the noise, R and a direction of
+k numbers), so up to about 90 predictors stays within what has been shown.
 }
 \examples{
+\dontrun{
 bayes_factor_models(lm(mpg ~ wt + hp, mtcars), lm(mpg ~ wt, mtcars),
-                    prior = "flat_partial_r")
-bayes_factor_models(lm(mpg ~ wt + hp, mtcars), lm(mpg ~ wt, mtcars),
-                    prior = "flat_r")
+                    prior = "flat_partial_r", seed = 1)
+bayes_factor_models(lm(mpg ~ wt + hp, mtcars), lm(mpg ~ 1, mtcars),
+                    prior = "flat_r", seed = 1)
+}
 }

@@ -1,10 +1,11 @@
-## Independent references for the whole-model Bayes factor: the prior as a
-## mixture of g-priors (objective-bayes/docs/appendix/A_derivations.md,
-## sections 7 and 8), evaluated by integrate(). They share no code with the
-## package's route (R/bayes_factor.R), which averages the likelihood ratio over
-## R-squared ~ Beta(a, 1) instead. A g-mixture exists for a <= k/2; for flat R
-## the tests use the direction form at the end of this file, which is more
-## precise than the B-mixture when Beta(1/2, (k - 1)/2) is sharp (large k).
+## Independent references for the whole-model Bayes factor against the
+## intercept-only model: the prior as a mixture of g-priors
+## (objective-bayes/docs/appendix/A_derivations.md, sections 7 and 8),
+## evaluated by integrate(). They share nothing with the package, which
+## estimates each marginal likelihood from its Stan model by bridge sampling.
+## A g-mixture exists for a <= k/2; for flat R the tests use the direction
+## form at the end of this file, which is more precise than the B-mixture
+## when Beta(1/2, (k - 1)/2) is sharp (large k).
 
 ## the g-prior Bayes factor for k predictors, on the log scale
 log_g_prior_bayes_factor <- function(g, r_squared, n, k)

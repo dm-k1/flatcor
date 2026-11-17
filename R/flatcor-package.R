@@ -17,15 +17,13 @@
 #' the total over the predictors with no preference:
 #' P(total) x P(this combination | total) x unit conversion.
 #'
-#' Main functions: \code{bayes_factor_models()} (the Bayes factor between two
-#' models), \code{fit_regression()} (the posterior),
-#' \code{log_bayes_factor_vs_intercept_only()} (each model against the
-#' intercept-only model, the route behind every Bayes factor), \code{support_per_partial_correlation()} and
-#' \code{support_per_partial_r_squared()} (the likelihood of each effect size
-#' against zero, no prior), \code{draw_coefficients_from_prior()} (the prior
-#' as a recipe).
+#' One Stan model (\code{inst/stan/flatcor.stan}) does everything, for all
+#' three priors: the posterior (\code{fit_regression()}) and, through bridge
+#' sampling on it, the Bayes factor between two models
+#' (\code{bayes_factor_models()}). \code{draw_coefficients_from_prior()}
+#' gives the prior as a recipe.
 #'
-#' @importFrom stats model.frame model.matrix model.response lm update terms coef formula nobs residuals
+#' @importFrom stats model.frame model.matrix model.response terms formula nobs
 #'   runif quantile sd
 #' @keywords internal
 "_PACKAGE"
