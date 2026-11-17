@@ -95,7 +95,7 @@ factor between two models, and the posterior.
   astronomical evidence (a relative error of about 5e-7 when the log Bayes
   factor is about 5.8 million).
 - Comments and help pages point to the reorganised validation repository
-  (https://github.com/dm-k1/objective-bayes).
+  (https://github.com/dm-k1/flatcor-validation).
 
 # flatcor 1.0.0
 
