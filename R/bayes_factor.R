@@ -89,7 +89,8 @@ bayes_factor_models <- function(model_a, model_b, prior = "flat_partial_r", chai
   per_model <- lapply(c(a = 0, b = 1), function(offset) {
     model_parts <- parts[[offset + 1]]
     sampled <- sample_posterior(model_parts$predictors, model_parts$outcome, prior, chains,
-                                iter_warmup, iter_sampling, adapt_delta, seed + offset, backend)
+                                iter_warmup, iter_sampling, adapt_delta, seed + offset, backend,
+                                model_methods = TRUE)
     bridge <- bridgesampling::bridge_sampler(sampled$fit, method = method, silent = TRUE)
     list(log_marginal_likelihood = bridge$logml,
          error = if (method == "normal") bridgesampling::error_measures(bridge)$cv else NA_real_,
