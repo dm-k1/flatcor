@@ -18,9 +18,10 @@ One Stan model does everything, for all three priors: the posterior for
 estimation, and the Bayes factor between any two linear models, from each
 model's marginal likelihood estimated by bridge sampling
 ([bridgesampling](https://cran.r-project.org/package=bridgesampling)). The
-default is flat partial r; the validation of the three priors side by side,
-and the arguments behind them, are in a separate repository,
-[dm-k1/objective-bayes](https://github.com/dm-k1/objective-bayes).
+default is flat partial r. The validation of the three priors side by side
+is in [dm-k1/flatcor-validation](https://github.com/dm-k1/flatcor-validation);
+the argument for them, and the paper, in
+[dm-k1/Objective-bayes](https://github.com/dm-k1/Objective-bayes).
 
 ## Install
 

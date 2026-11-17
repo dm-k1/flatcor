@@ -14,7 +14,7 @@ Description: Bayes factors and estimation for linear regression with
     is flat for any number of predictors), flat R (a = 1/2) and flat
     R-squared (a = 1). The default is flat partial r; the others are
     chosen with prior =. Their validation is at
-    https://github.com/dm-k1/objective-bayes. One Stan model, which samples
+    https://github.com/dm-k1/flatcor-validation. One Stan model, which samples
     the prior in its own coordinates (R and a direction), gives the
     posterior for estimation and, through bridge sampling (bridgesampling),
     the Bayes factor between any two linear models.

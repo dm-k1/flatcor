@@ -5,7 +5,7 @@
 ## The Stan model samples the prior in its own coordinates: R and a
 ## direction (uniform), with the coefficients computed from them. Sampling
 ## the coefficients directly misses the prior's peak at zero for larger k
-## (objective-bayes, studies 1 and 3). With no predictors it is the
+## (flatcor-validation, studies 1a and 2a). With no predictors it is the
 ## intercept-only model.
 
 compiled_models <- new.env()   # compile once per session

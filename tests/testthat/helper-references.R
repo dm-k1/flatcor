@@ -1,6 +1,6 @@
 ## Independent references for the whole-model Bayes factor against the
 ## intercept-only model: the prior as a mixture of g-priors
-## (objective-bayes/docs/appendix/A_derivations.md, sections 7 and 8),
+## (flatcor-validation/docs/appendix/A_derivations.md, sections 7 and 8),
 ## evaluated by integrate(). They share nothing with the package, which
 ## estimates each marginal likelihood from its Stan model by bridge sampling.
 ## A g-mixture exists for a <= k/2; for flat R the tests use the direction
