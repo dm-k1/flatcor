@@ -44,7 +44,8 @@ test_that("the intercept-only model's marginal likelihood matches its closed for
   closed_form <- -0.5 * log(n) - (n - 1) / 2 * log(2 * pi) + lgamma((n - 1) / 2) - log(2) -
     (n - 1) / 2 * log(sst / 2)
   sampled <- sample_posterior(matrix(0, n, 0), y, "flat_r", chains = 4, iter_warmup = 1000,
-                              iter_sampling = 5000, adapt_delta = 0.95, seed = 1, backend = "cmdstanr")
+                              iter_sampling = 5000, adapt_delta = 0.95, seed = 1, backend = "cmdstanr",
+                              model_methods = TRUE)
   bridge <- bridgesampling::bridge_sampler(sampled$fit, silent = TRUE)
   expect_within_error(bridge$logml, closed_form, bridgesampling::error_measures(bridge)$cv)
 })

@@ -25,7 +25,10 @@ of the package's own any more.
   `support_per_partial_r_squared()`, `support_regions()`): they use no prior,
   and ran on the same likelihood ratio code.
 - The compiled Stan model is kept in a folder per flatcor version, so an
-  executable from another version is never reused.
+  executable from another version is never reused. Bayes factors need the
+  model's log density as well, which cmdstanr can only provide in the R
+  session that compiled the model: that version is compiled once per session,
+  into the session's temporary folder.
 - The help pages and the package description no longer say that the
   validation recommends flat partial r: the validation is being redone, and
   the default stays flat partial r.

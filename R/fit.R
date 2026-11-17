@@ -10,24 +10,29 @@
 
 compiled_models <- new.env()   # compile once per session
 
-## The Stan model ships in inst/stan. cmdstanr writes its executable to a
-## user cache folder, one per flatcor version, because the installed package
-## folder may not be writable and an executable from another version must
-## never be reused. The model methods (log density on the unconstrained
-## scale) are compiled too: bridgesampling needs them.
-compile_stan_model <- function(backend) {
-  if (is.null(compiled_models[[backend]])) {
+## The Stan model ships in inst/stan. For estimation, cmdstanr writes its
+## executable to a user cache folder, one per flatcor version, because the
+## installed package folder may not be writable and an executable from another
+## version must never be reused. Bayes factors also need the model methods
+## (the log density on the unconstrained scale, for bridgesampling), and
+## cmdstanr can only provide those in the R session that compiled the model:
+## that version is compiled once per session into the session's temporary
+## folder, so that parallel R processes never compile into the same file.
+compile_stan_model <- function(backend, model_methods = FALSE) {
+  key <- paste(backend, if (model_methods && backend == "cmdstanr") "methods" else "plain")
+  if (is.null(compiled_models[[key]])) {
     stan_file <- system.file("stan", "flatcor.stan", package = "flatcor", mustWork = TRUE)
-    compiled_models[[backend]] <- if (backend == "cmdstanr") {
-      executable_folder <- file.path(tools::R_user_dir("flatcor", which = "cache"),
-                                     as.character(utils::packageVersion("flatcor")))
+    compiled_models[[key]] <- if (backend == "cmdstanr") {
+      executable_folder <- if (model_methods) file.path(tempdir(), "flatcor_stan") else
+        file.path(tools::R_user_dir("flatcor", which = "cache"), as.character(utils::packageVersion("flatcor")))
       dir.create(executable_folder, recursive = TRUE, showWarnings = FALSE)
-      cmdstanr::cmdstan_model(stan_file, dir = executable_folder, compile_model_methods = TRUE)
+      cmdstanr::cmdstan_model(stan_file, dir = executable_folder, compile_model_methods = model_methods,
+                              quiet = TRUE)
     } else {
       rstan::stan_model(stan_file)
     }
   }
-  compiled_models[[backend]]
+  compiled_models[[key]]
 }
 
 default_backend <- function()
@@ -37,12 +42,12 @@ default_backend <- function()
 ## columns) and outcome. Returns the backend's fit and its number of
 ## divergent transitions.
 sample_posterior <- function(predictors, outcome, prior, chains, iter_warmup, iter_sampling,
-                             adapt_delta, seed, backend) {
+                             adapt_delta, seed, backend, model_methods = FALSE) {
   check_full_rank(predictors)
   stan_data <- list(N = length(outcome), K = ncol(predictors), X = predictors, y = outcome,
                     prior_only = 0L, proper_stand_ins = 0L,
                     r_squared_shape = prior_shape(prior, ncol(predictors)))
-  model <- compile_stan_model(backend)
+  model <- compile_stan_model(backend, model_methods)
   if (backend == "cmdstanr") {
     fit <- model$sample(data = stan_data, chains = chains, parallel_chains = chains,
                         iter_warmup = iter_warmup, iter_sampling = iter_sampling,
