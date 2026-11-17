@@ -13,7 +13,7 @@ fit_regression(
   iter_sampling = 1000,
   adapt_delta = 0.95,
   seed = NULL,
-  backend = if (requireNamespace("cmdstanr", quietly = TRUE)) "cmdstanr" else "rstan"
+  backend = default_backend()
 )
 }
 \arguments{
@@ -22,8 +22,7 @@ fit_regression(
 \item{data}{A data frame.}
 
 \item{prior}{\code{"flat_partial_r"} (the default; R-squared ~ Beta(k/2, 1)),
-\code{"flat_r"} (R flat) or \code{"flat_r_squared"} (R-squared flat). See
-\code{bayes_factor_models()}.}
+\code{"flat_r"} (R flat) or \code{"flat_r_squared"} (R-squared flat).}
 
 \item{chains, iter_warmup, iter_sampling, adapt_delta, seed}{Sampler settings.}
 

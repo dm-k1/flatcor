@@ -1,9 +1,36 @@
-# flatcor (development version)
+# flatcor (development version, to be 3.0.0)
 
+One Stan model now does everything, for all three priors: the posterior, and
+the Bayes factor between two models. No Bayes factor is computed by a formula
+of the package's own any more.
+
+- `bayes_factor_models()` fits each model with the chosen prior and estimates
+  its marginal likelihood by bridge sampling (bridgesampling, now imported);
+  the Bayes factor is their ratio. It returns a `flatcor_bayes_factor` with
+  the Bayes factor, its log, bridgesampling's approximate error of the log,
+  both log marginal likelihoods and each fit's divergent transitions. By
+  default each model gets 4 chains of 10,000 draws (ten times those for
+  estimation, as the bridgesampling authors advise for testing); `seed`,
+  `method = "warp3"` and the sampler settings can be set. It needs Stan
+  (cmdstanr or rstan).
+- A model with no predictors (`lm(y ~ 1)`) is the intercept-only model: the
+  Stan model now accepts K = 0.
+- The Stan model keeps every normalising constant (`target +=` throughout, the
+  2a of R's density and the constant of the direction's density), as bridge
+  sampling needs.
+- Removed `log_bayes_factor_vs_intercept_only()` and the likelihood ratio code
+  behind it: it went wrong with many predictors (about 90 or more), at
+  near-perfect fits with few observations and at very strong evidence.
+- Removed the support curves (`support_per_partial_correlation()`,
+  `support_per_partial_r_squared()`, `support_regions()`): they use no prior,
+  and ran on the same likelihood ratio code.
+- The compiled Stan model is kept in a folder per flatcor version, so an
+  executable from another version is never reused.
 - The help pages and the package description no longer say that the
-  validation recommends flat partial r: the validation is being redone for
-  2.0.0, and the default stays flat partial r.
-- `stats::dt()` is no longer imported (it was unused).
+  validation recommends flat partial r: the validation is being redone, and
+  the default stays flat partial r.
+- `stats::dt()` and other unused functions are no longer imported; ggplot2 is
+  no longer suggested.
 
 # flatcor 2.0.0
 
