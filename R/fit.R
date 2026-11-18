@@ -50,8 +50,8 @@ compile_stan_model <- function(backend, model_methods = FALSE) {
 random_seed <- function() sample.int(.Machine$integer.max - 1, 1)
 
 ## Evaluate `code` with R's random numbers seeded by `seed`, and put the
-## caller's random state back afterwards. For the steps that use R's random
-## numbers besides Stan's own (bridge sampling, the backend's R code).
+## caller's random state back afterwards. For bridge sampling, which uses
+## R's random numbers instead of Stan's.
 with_seed <- function(seed, code) {
   caller_seed <- get0(".Random.seed", envir = globalenv())
   on.exit({
@@ -71,12 +71,15 @@ default_backend <- function() {
 
 ## Sample the posterior of one model: predictors (a matrix, possibly with no
 ## columns) and outcome. Returns the backend's fit and its number of
-## divergent transitions.
+## divergent transitions. per_observation: also draw log_lik and y_rep (for
+## loo and pp_check; a Bayes factor does not need them).
 sample_posterior <- function(predictors, outcome, prior, chains, iter_warmup, iter_sampling,
-                             adapt_delta, seed, backend, model_methods = FALSE) {
+                             adapt_delta, seed, backend, model_methods = FALSE,
+                             per_observation = FALSE) {
   check_full_rank(predictors)
   stan_data <- list(N = length(outcome), K = ncol(predictors), X = predictors, y = outcome,
                     prior_only = 0L, proper_stand_ins = 0L,
+                    per_observation = as.integer(per_observation),
                     r_squared_shape = prior_shape(prior, ncol(predictors)))
   model <- compile_stan_model(backend, model_methods)
   if (backend == "cmdstanr") {
@@ -174,8 +177,8 @@ fit_regression <- function(formula, data, prior = "flat_partial_r", chains = 4, 
   if (ncol(predictors) == 0) stop("fit_regression() needs at least one predictor.", call. = FALSE)
   if (is.null(seed)) seed <- random_seed()
 
-  sampled <- with_seed(seed, sample_posterior(predictors, outcome, prior, chains, iter_warmup,
-                                              iter_sampling, adapt_delta, seed, backend))
+  sampled <- sample_posterior(predictors, outcome, prior, chains, iter_warmup, iter_sampling,
+                              adapt_delta, seed, backend, per_observation = TRUE)
   all_draws <- if (backend == "cmdstanr") {
     posterior::as_draws_df(sampled$fit$draws())
   } else {

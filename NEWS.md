@@ -9,9 +9,13 @@ of the package's own any more.
   taken from an `lm()` fit but its predictors and outcome. Both models use
   the rows with no missing value in any variable of either formula.
 - `seed` now makes a Bayes factor fully reproducible: it seeds Stan and also
-  R's random numbers that bridge sampling uses (and puts R's random state
-  back afterwards). Without `seed`, both are drawn from R's random numbers,
-  so `set.seed()` beforehand does the same.
+  R's random numbers that bridge sampling uses. Without `seed`, the seed is
+  drawn from R's random numbers, so `set.seed()` beforehand does the same.
+- The Stan model draws `log_lik` and `y_rep` (N numbers per draw each) only
+  for `fit_regression()`, which needs them for `loo()` and `pp_check()`; a
+  Bayes factor fit skips them (data `per_observation`). At n = 5000 with the
+  default draws they took about 4.5 GB on disk and 3.2 GB in memory per
+  model, enough to crash a worker.
 - rstan and cmdstanr cannot both be used for Bayes factors in one R session;
   the help says so, and the tests run rstan in its own R process.
 - `bayes_factor_models()` fits each model with the chosen prior and estimates

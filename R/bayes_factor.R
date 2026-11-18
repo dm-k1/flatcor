@@ -45,8 +45,9 @@
 #'   each model (the default draws are ten times those for estimation).
 #' @param seed Makes the result reproducible: Stan's seed for the first model
 #'   (the second uses \code{seed + 1}), and the seed of R's random numbers that
-#'   bridge sampling uses. Without it both are drawn from R's random numbers,
-#'   so \code{set.seed()} beforehand does the same.
+#'   bridge sampling uses (R's own random state is put back afterwards).
+#'   Without it the seed is drawn from R's random numbers, so
+#'   \code{set.seed()} beforehand does the same.
 #' @param method \code{"normal"} (the default) or \code{"warp3"}, passed to
 #'   \code{bridgesampling::bridge_sampler()}.
 #' @return A \code{flatcor_bayes_factor}: \code{$bayes_factor} (model A
@@ -74,19 +75,22 @@ bayes_factor_models <- function(formula_a, formula_b, data, prior = "flat_partia
   }
   if (is.null(seed)) seed <- random_seed()
 
-  ## each model with its own seed, for Stan and for everything that uses R's
-  ## random numbers (bridge sampling, the backend's own R code)
+  ## each model with its own seed: Stan's, and that of R's random numbers for
+  ## bridge sampling. (Only bridge sampling: cmdstanr names its output files
+  ## with R's random numbers, and seeding those would give two fits with the
+  ## same seed the same file names.)
   per_model <- lapply(c(a = 0, b = 1), function(offset) {
     model_parts <- parts[[offset + 1]]
-    with_seed(seed + offset, {
-      sampled <- sample_posterior(model_parts$predictors, model_parts$outcome, prior, chains,
-                                  iter_warmup, iter_sampling, adapt_delta, seed + offset, backend,
-                                  model_methods = TRUE)
-      bridge <- bridgesampling::bridge_sampler(sampled$fit, method = method, silent = TRUE)
-      list(log_marginal_likelihood = bridge$logml,
-           error = if (method == "normal") bridgesampling::error_measures(bridge)$cv else NA_real_,
-           divergent = sampled$divergent)
-    })
+    sampled <- sample_posterior(model_parts$predictors, model_parts$outcome, prior, chains,
+                                iter_warmup, iter_sampling, adapt_delta, seed + offset, backend,
+                                model_methods = TRUE)
+    bridge <- with_seed(
+      seed + offset,
+      bridgesampling::bridge_sampler(sampled$fit, method = method, silent = TRUE)
+    )
+    list(log_marginal_likelihood = bridge$logml,
+         error = if (method == "normal") bridgesampling::error_measures(bridge)$cv else NA_real_,
+         divergent = sampled$divergent)
   })
   log_bayes_factor <- per_model$a$log_marginal_likelihood - per_model$b$log_marginal_likelihood
   structure(list(bayes_factor     = exp(log_bayes_factor),
