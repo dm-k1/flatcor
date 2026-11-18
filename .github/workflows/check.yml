@@ -105,7 +105,11 @@ jobs:
       - uses: r-lib/actions/setup-r-dependencies@v2
         with:
           dependencies: '"hard"'
-          extra-packages: any::testthat, any::callr, any::pkgload, any::rstan, local::.
+          # rstan compiles models with the headers of BH and RcppEigen, which a
+          # binary install of rstan does not bring along
+          extra-packages: >-
+            any::testthat, any::callr, any::pkgload, any::rstan,
+            any::BH, any::RcppEigen, local::.
       - name: Run the tests that use rstan
         env:
           NOT_CRAN: true
