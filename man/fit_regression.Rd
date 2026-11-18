@@ -28,7 +28,8 @@ Beta(1, 1) for every k). The default is \code{"flat_partial_r"}.}
 
 \item{chains, iter_warmup, iter_sampling, adapt_delta, seed}{Sampler settings.}
 
-\item{backend}{\code{"cmdstanr"} (default when installed) or \code{"rstan"}.
+\item{backend}{\code{"cmdstanr"} (the default when CmdStan is installed)
+or \code{"rstan"} (the default otherwise).
 Use one backend per R session: once rstan is loaded, cmdstanr can no
 longer compute Bayes factors in that session. The validation
 (flatcor-validation) used cmdstanr.}

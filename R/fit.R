@@ -65,8 +65,12 @@ with_seed <- function(seed, code) {
   code
 }
 
+## cmdstanr when CmdStan itself is installed, otherwise rstan: having only the
+## cmdstanr R package, without CmdStan, is not enough to fit anything
 default_backend <- function() {
-  if (requireNamespace("cmdstanr", quietly = TRUE)) "cmdstanr" else "rstan"
+  has_cmdstan <- requireNamespace("cmdstanr", quietly = TRUE) &&
+    !is.null(cmdstanr::cmdstan_version(error_on_NA = FALSE))
+  if (has_cmdstan) "cmdstanr" else "rstan"
 }
 
 ## Sample the posterior of one model: predictors (a matrix, possibly with no
@@ -149,7 +153,8 @@ predictors_and_outcome <- function(formula, rows) {
 #' @param formula A model formula with an intercept and at least one predictor.
 #' @param data A data frame.
 #' @param chains,iter_warmup,iter_sampling,adapt_delta,seed Sampler settings.
-#' @param backend \code{"cmdstanr"} (default when installed) or \code{"rstan"}.
+#' @param backend \code{"cmdstanr"} (the default when CmdStan is installed)
+#'   or \code{"rstan"} (the default otherwise).
 #'   Use one backend per R session: once rstan is loaded, cmdstanr can no
 #'   longer compute Bayes factors in that session. The validation
 #'   (flatcor-validation) used cmdstanr.

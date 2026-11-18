@@ -41,7 +41,8 @@ Without it the seed is drawn from R's random numbers, so
 \item{method}{\code{"normal"} (the default) or \code{"warp3"}, passed to
 \code{bridgesampling::bridge_sampler()}.}
 
-\item{backend}{\code{"cmdstanr"} (default when installed) or \code{"rstan"}.
+\item{backend}{\code{"cmdstanr"} (the default when CmdStan is installed)
+or \code{"rstan"} (the default otherwise).
 Use one backend per R session: once rstan is loaded, cmdstanr can no
 longer compute Bayes factors in that session. The validation
 (flatcor-validation) used cmdstanr.}
