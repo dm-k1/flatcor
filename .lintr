@@ -7,7 +7,10 @@ linters: linters_with_defaults(
     )),
     commented_code_linter = NULL
   )
+exclusions: list(
+    "tests/testthat" = list(object_usage_linter = Inf)
+  )
 encoding: "UTF-8"
 # The same style as flatcor-validation's .lintr. Names may end in a capital
-# symbol (R_squared). The "no visible global function" notes in the tests are
-# testthat's functions, available when the tests run.
+# symbol (R_squared). The tests skip object_usage_linter: they use testthat's
+# functions (skip_on_cran(), expect_lt(), ...), which exist when tests run.

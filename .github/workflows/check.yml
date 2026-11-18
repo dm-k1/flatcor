@@ -1,0 +1,113 @@
+# Checks flatcor on every push and pull request: four independent jobs that
+# start at the same time, written from the quickest to the slowest.
+#
+#   lint               lintr, in the style of .lintr (seconds)
+#   check              R CMD check without Stan; the Stan tests skip
+#                      themselves (a few minutes)
+#   tests-cmdstanr     every test, with cmdstanr and CmdStan (CmdStan is
+#                      cached after the first run)
+#   tests-rstan        the tests that use rstan (rstan from binary packages)
+#
+# rstan and cmdstanr get a job each, as they cannot share an R session for
+# Bayes factors. On a public repository the runners are free.
+name: Check
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: check-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  lint:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: r-lib/actions/setup-r@v2
+        with:
+          use-public-rspm: true
+      - uses: r-lib/actions/setup-r-dependencies@v2
+        with:
+          dependencies: '"hard"'
+          extra-packages: any::lintr, local::.
+          needs: lint
+      - name: Lint
+        run: |
+          lints <- lintr::lint_package()
+          print(lints)
+          if (length(lints) > 0) quit(status = 1)
+        shell: Rscript {0}
+
+  check:
+    runs-on: ubuntu-latest
+    env:
+      _R_CHECK_FORCE_SUGGESTS_: false
+    steps:
+      - uses: actions/checkout@v4
+      - uses: r-lib/actions/setup-r@v2
+        with:
+          use-public-rspm: true
+      - uses: r-lib/actions/setup-r-dependencies@v2
+        with:
+          dependencies: '"hard"'
+          extra-packages: any::rcmdcheck, any::testthat, any::callr, any::pkgload
+          needs: check
+      - uses: r-lib/actions/check-r-package@v2
+        with:
+          args: 'c("--no-manual", "--as-cran")'
+          error-on: '"warning"'
+
+  tests-cmdstanr:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: r-lib/actions/setup-r@v2
+        with:
+          use-public-rspm: true
+      - uses: r-lib/actions/setup-r-dependencies@v2
+        with:
+          dependencies: '"hard"'
+          extra-packages: >-
+            any::testthat, any::callr, any::pkgload,
+            stan-dev/cmdstanr, local::.
+      - name: Cache CmdStan
+        uses: actions/cache@v4
+        with:
+          path: ~/.cmdstan
+          key: cmdstan-${{ runner.os }}-2.40.0
+      - name: Install CmdStan
+        run: |
+          if (is.null(tryCatch(cmdstanr::cmdstan_path(), error = function(e) NULL))) {
+            cmdstanr::install_cmdstan(version = "2.40.0", cores = parallel::detectCores())
+          }
+          cmdstanr::cmdstan_version()
+        shell: Rscript {0}
+      - name: Run every test
+        env:
+          NOT_CRAN: true
+        run: testthat::test_local(reporter = c("summary", "fail"))
+        shell: Rscript {0}
+
+  tests-rstan:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: r-lib/actions/setup-r@v2
+        with:
+          use-public-rspm: true
+      - uses: r-lib/actions/setup-r-dependencies@v2
+        with:
+          dependencies: '"hard"'
+          extra-packages: any::testthat, any::callr, any::pkgload, any::rstan, local::.
+      - name: Run the tests that use rstan
+        env:
+          NOT_CRAN: true
+        run: testthat::test_local(filter = "rstan|fit", reporter = c("summary", "fail"))
+        shell: Rscript {0}
