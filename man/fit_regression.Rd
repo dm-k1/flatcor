@@ -21,12 +21,17 @@ fit_regression(
 
 \item{data}{A data frame.}
 
-\item{prior}{\code{"flat_partial_r"} (the default; R-squared ~ Beta(k/2, 1)),
-\code{"flat_r"} (R flat) or \code{"flat_r_squared"} (R-squared flat).}
+\item{prior}{\code{"flat_partial_r"} (every correlation matrix equally
+likely, R-squared ~ Beta(k/2, 1)), \code{"flat_r"} (R-squared ~
+Beta(1/2, 1) for every k) or \code{"flat_r_squared"} (R-squared ~
+Beta(1, 1) for every k). The default is \code{"flat_partial_r"}.}
 
 \item{chains, iter_warmup, iter_sampling, adapt_delta, seed}{Sampler settings.}
 
-\item{backend}{\code{"cmdstanr"} (default when installed) or \code{"rstan"}.}
+\item{backend}{\code{"cmdstanr"} (default when installed) or \code{"rstan"}.
+Use one backend per R session: once rstan is loaded, cmdstanr can no
+longer compute Bayes factors in that session. The validation
+(flatcor-validation) used cmdstanr.}
 }
 \value{
 A \code{flatcor_fit}: \code{print()} shows estimates and diagnostics,

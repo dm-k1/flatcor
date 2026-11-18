@@ -1,0 +1,13 @@
+linters: linters_with_defaults(
+    line_length_linter(100),
+    object_length_linter(40),
+    object_name_linter(styles = c("snake_case", "symbols"), regexes = c(
+      symbol_suffix = "^[a-z][a-z0-9_]*_[A-Z][A-Za-z0-9]*(_[a-z0-9]+)*$",
+      random_seed = "^\\.Random\\.seed$"
+    )),
+    commented_code_linter = NULL
+  )
+encoding: "UTF-8"
+# The same style as flatcor-validation's .lintr. Names may end in a capital
+# symbol (R_squared). The "no visible global function" notes in the tests are
+# testthat's functions, available when the tests run.

@@ -4,6 +4,16 @@ One Stan model now does everything, for all three priors: the posterior, and
 the Bayes factor between two models. No Bayes factor is computed by a formula
 of the package's own any more.
 
+- `bayes_factor_models(formula_a, formula_b, data)` takes the two models as
+  formulas, like `fit_regression()`, instead of `lm()` fits: nothing was ever
+  taken from an `lm()` fit but its predictors and outcome. Both models use
+  the rows with no missing value in any variable of either formula.
+- `seed` now makes a Bayes factor fully reproducible: it seeds Stan and also
+  R's random numbers that bridge sampling uses (and puts R's random state
+  back afterwards). Without `seed`, both are drawn from R's random numbers,
+  so `set.seed()` beforehand does the same.
+- rstan and cmdstanr cannot both be used for Bayes factors in one R session;
+  the help says so, and the tests run rstan in its own R process.
 - `bayes_factor_models()` fits each model with the chosen prior and estimates
   its marginal likelihood by bridge sampling (bridgesampling, now imported);
   the Bayes factor is their ratio. It returns a `flatcor_bayes_factor` with

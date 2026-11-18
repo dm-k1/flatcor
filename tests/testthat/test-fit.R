@@ -1,7 +1,8 @@
 test_that("fit_regression() runs and works with print, loo and pp_check", {
   skip_on_cran()
-  skip_if_not(requireNamespace("cmdstanr", quietly = TRUE) || requireNamespace("rstan", quietly = TRUE),
-              "needs cmdstanr or rstan")
+  has_stan <- requireNamespace("cmdstanr", quietly = TRUE) ||
+    requireNamespace("rstan", quietly = TRUE)
+  skip_if_not(has_stan, "needs cmdstanr or rstan")
   set.seed(1)
   data <- data.frame(x1 = rnorm(50), x2 = rnorm(50))
   data$y <- 0.4 * data$x1 + rnorm(50)

@@ -30,7 +30,9 @@ remotes::install_github("dm-k1/flatcor")
 ```
 
 Everything needs Stan, through [cmdstanr](https://mc-stan.org/cmdstanr/)
-(recommended) or rstan.
+(recommended; the validation used it) or rstan, which installs from CRAN
+without a separate CmdStan. Use one of the two per R session: once rstan is
+loaded, cmdstanr cannot compute Bayes factors in that session.
 
 ## Use
 
@@ -38,17 +40,17 @@ Everything needs Stan, through [cmdstanr](https://mc-stan.org/cmdstanr/)
 library(flatcor)
 
 ## the Bayes factor between any two linear models, nested or not
-bayes_factor_models(lm(mpg ~ wt + hp, mtcars), lm(mpg ~ wt, mtcars), seed = 1)
+bayes_factor_models(mpg ~ wt + hp, mpg ~ wt, mtcars, seed = 1)
 
 ## a model against the intercept-only model
-bayes_factor_models(lm(mpg ~ wt + hp, mtcars), lm(mpg ~ 1, mtcars), seed = 1)
+bayes_factor_models(mpg ~ wt + hp, mpg ~ 1, mtcars, seed = 1)
 
 ## estimation
 fit <- fit_regression(mpg ~ wt + hp, mtcars)
 fit; loo(fit); pp_check(fit)
 
 ## another prior
-bayes_factor_models(lm(mpg ~ wt + hp, mtcars), lm(mpg ~ wt, mtcars), prior = "flat_r", seed = 1)
+bayes_factor_models(mpg ~ wt + hp, mpg ~ wt, mtcars, prior = "flat_r", seed = 1)
 ```
 
 A Bayes factor is an estimate with a Monte Carlo error, which is printed with

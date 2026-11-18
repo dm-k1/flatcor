@@ -49,8 +49,10 @@ check_prior <- function(prior, defaulted = FALSE) {
 
 ## The shape a of R-squared ~ Beta(a, 1) for k predictor columns.
 prior_shape <- function(prior, number_of_predictors) {
-  switch(check_prior(prior),
+  switch(
+    check_prior(prior),
     flat_partial_r = number_of_predictors / 2,
     flat_r         = 1 / 2,
-    flat_r_squared = 1)
+    flat_r_squared = 1
+  )
 }
