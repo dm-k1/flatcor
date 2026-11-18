@@ -45,9 +45,11 @@ and a direction (uniform), with the coefficients computed from them
 (\code{inst/stan/flatcor.stan}). Intercept flat, noise level \eqn{1/\sigma}.
 }
 \examples{
-\dontrun{
-fit <- fit_regression(mpg ~ wt + hp, mtcars, prior = "flat_partial_r")
-fit
-loo(fit)
+# needs CmdStan (cmdstanr::install_cmdstan())
+if (requireNamespace("cmdstanr", quietly = TRUE) &&
+    !is.null(cmdstanr::cmdstan_version(error_on_NA = FALSE))) {
+  fit <- fit_regression(mpg ~ wt + hp, mtcars, prior = "flat_partial_r")
+  fit
+  loo(fit)
 }
 }

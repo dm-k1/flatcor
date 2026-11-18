@@ -86,19 +86,33 @@ model {
     target += log(2 * r_squared_shape) + (2 * r_squared_shape - 1) * log(R_magnitude);
   // factor 2: direction uniform (z's density, normalised)
   if (K > 1) target += -0.5 * square((norm2(z) - 1) / 0.1) - log_direction_constant;
-  if (proper_stand_ins) {
-    // Checks that sample the prior, or simulate data from it, need proper priors
-    // on alpha and sigma. R, f and the direction don't depend on these.
-    target += normal_lpdf(alpha | 0, 10) + lognormal_lpdf(sigma | 0, 1);
+
+  // A long trajectory sometimes overshoots far into a region of practically
+  // zero probability, where R rounds to 1 (an infinite f), sigma rounds to 0
+  // or to infinity, or the mean of y is not finite. The density there is
+  // zero: such a proposal is rejected by giving it log density -infinity,
+  // instead of letting a density function stop with an error, which Stan
+  // would print and then reject the proposal just the same.
+  vector[N] mu = alpha + Xc * b_magnitude;
+  real mu_sum = sum(mu);
+  if (sigma == 0 || is_inf(sigma)
+      || (!prior_only && (is_inf(mu_sum) || is_nan(mu_sum)))) {
+    target += negative_infinity();
   } else {
-    target += -log(sigma);                   // Jeffreys prior on the noise; alpha flat
-  }
-  if (!prior_only) {
-    if (K == 1)                              // the sign of R, + or - with probability 1/2
-      target += log_mix(0.5, normal_lpdf(y | alpha + Xc * b_magnitude, sigma),
-                             normal_lpdf(y | alpha - Xc * b_magnitude, sigma));
-    else
-      target += normal_lpdf(y | alpha + Xc * b_magnitude, sigma);
+    if (proper_stand_ins) {
+      // Checks that sample the prior, or simulate data from it, need proper
+      // priors on alpha and sigma. R, f and the direction don't depend on these.
+      target += normal_lpdf(alpha | 0, 10) + lognormal_lpdf(sigma | 0, 1);
+    } else {
+      target += -log(sigma);                 // Jeffreys prior on the noise; alpha flat
+    }
+    if (!prior_only) {
+      if (K == 1)                            // the sign of R, + or - with probability 1/2
+        target += log_mix(0.5, normal_lpdf(y | mu, sigma),
+                               normal_lpdf(y | alpha - Xc * b_magnitude, sigma));
+      else
+        target += normal_lpdf(y | mu, sigma);
+    }
   }
 }
 generated quantities {

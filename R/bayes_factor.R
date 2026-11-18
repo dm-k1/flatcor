@@ -55,9 +55,11 @@
 #'   SE of the log Bayes factor; \code{NA} for \code{"warp3"}), the two log
 #'   marginal likelihoods and the divergent transitions of each fit.
 #' @examples
-#' \dontrun{
-#' bayes_factor_models(mpg ~ wt + hp, mpg ~ wt, mtcars, prior = "flat_partial_r", seed = 1)
-#' bayes_factor_models(mpg ~ wt + hp, mpg ~ 1, mtcars, prior = "flat_r", seed = 1)
+#' # needs CmdStan (cmdstanr::install_cmdstan())
+#' if (requireNamespace("cmdstanr", quietly = TRUE) &&
+#'     !is.null(cmdstanr::cmdstan_version(error_on_NA = FALSE))) {
+#'   bayes_factor_models(mpg ~ wt + hp, mpg ~ wt, mtcars, prior = "flat_partial_r", seed = 1)
+#'   bayes_factor_models(mpg ~ wt + hp, mpg ~ 1, mtcars, prior = "flat_r", seed = 1)
 #' }
 #' @export
 bayes_factor_models <- function(formula_a, formula_b, data, prior = "flat_partial_r", chains = 4,

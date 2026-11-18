@@ -30,10 +30,14 @@ compile_stan_model <- function(backend, model_methods = FALSE) {
         file.path(tools::R_user_dir("flatcor", which = "cache"), version)
       }
       dir.create(executable_folder, recursive = TRUE, showWarnings = FALSE)
+      # the version with model methods is compiled afresh once per loaded
+      # package: after flatcor is reloaded in the same session, cmdstanr
+      # refuses to add methods to the executable already in the temporary folder
       cmdstanr::cmdstan_model(
         stan_file,
         dir = executable_folder,
         compile_model_methods = model_methods,
+        force_recompile = model_methods,
         quiet = TRUE
       )
     } else {
@@ -166,10 +170,12 @@ predictors_and_outcome <- function(formula, rows) {
 #'   \code{loo()} and \code{pp_check()} work as usual, and \code{$draws}
 #'   holds all posterior draws as a \code{posterior::draws_df}.
 #' @examples
-#' \dontrun{
-#' fit <- fit_regression(mpg ~ wt + hp, mtcars, prior = "flat_partial_r")
-#' fit
-#' loo(fit)
+#' # needs CmdStan (cmdstanr::install_cmdstan())
+#' if (requireNamespace("cmdstanr", quietly = TRUE) &&
+#'     !is.null(cmdstanr::cmdstan_version(error_on_NA = FALSE))) {
+#'   fit <- fit_regression(mpg ~ wt + hp, mtcars, prior = "flat_partial_r")
+#'   fit
+#'   loo(fit)
 #' }
 #' @export
 fit_regression <- function(formula, data, prior = "flat_partial_r", chains = 4, iter_warmup = 1000,
@@ -243,9 +249,11 @@ print.flatcor_fit <- function(x, digits = 3, ...) {
 #' @return A \code{loo} object (see \code{loo::loo()}): the expected log
 #'   predictive density, its SE, and the Pareto k diagnostics per observation.
 #' @examples
-#' \dontrun{
-#' fit <- fit_regression(mpg ~ wt + hp, mtcars, prior = "flat_partial_r", seed = 1)
-#' loo(fit)
+#' # needs CmdStan (cmdstanr::install_cmdstan())
+#' if (requireNamespace("cmdstanr", quietly = TRUE) &&
+#'     !is.null(cmdstanr::cmdstan_version(error_on_NA = FALSE))) {
+#'   fit <- fit_regression(mpg ~ wt + hp, mtcars, prior = "flat_partial_r", seed = 1)
+#'   loo(fit)
 #' }
 #' @exportS3Method loo::loo
 loo.flatcor_fit <- function(x, cores = 1, ...) {
@@ -259,9 +267,11 @@ loo.flatcor_fit <- function(x, cores = 1, ...) {
 #' @return A ggplot: the density of the outcome against the densities of
 #'   \code{ndraws} datasets predicted from the posterior.
 #' @examples
-#' \dontrun{
-#' fit <- fit_regression(mpg ~ wt + hp, mtcars, prior = "flat_partial_r", seed = 1)
-#' pp_check(fit)
+#' # needs CmdStan (cmdstanr::install_cmdstan())
+#' if (requireNamespace("cmdstanr", quietly = TRUE) &&
+#'     !is.null(cmdstanr::cmdstan_version(error_on_NA = FALSE))) {
+#'   fit <- fit_regression(mpg ~ wt + hp, mtcars, prior = "flat_partial_r", seed = 1)
+#'   pp_check(fit)
 #' }
 #' @exportS3Method bayesplot::pp_check
 pp_check.flatcor_fit <- function(object, ndraws = 50, ...) {
