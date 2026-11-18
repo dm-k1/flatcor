@@ -40,6 +40,9 @@ data {
   vector[N] y;
   int<lower=0, upper=1> prior_only;      // 1: ignore y (sample the prior)
   int<lower=0, upper=1> proper_stand_ins; // 1: proper priors on alpha and sigma (for checks)
+  int<lower=0, upper=1> per_observation; // 1: log_lik and y_rep per observation (loo,
+                                         // pp_check); 0: skip them (Bayes factors, where
+                                         // they would be N numbers per draw for nothing)
   real<lower=0> r_squared_shape;         // a in R^2 ~ Beta(a, 1) (unused when K = 0)
 }
 transformed data {
@@ -111,11 +114,12 @@ generated quantities {
   real R = sign_of_R * R_magnitude;          // the overall correlation (signed when K = 1)
   real f = sign_of_R * f_magnitude;          // Cohen's f (signed when K = 1)
   vector[K] b = sign_of_R * b_magnitude;     // the coefficients
-  // per observation: log-likelihood (for loo) and a predicted value (for pp_check)
-  vector[N] log_lik;
-  array[N] real y_rep;
+  // per observation: log-likelihood (for loo) and a predicted value (for
+  // pp_check); empty when per_observation = 0
+  vector[per_observation ? N : 0] log_lik;
+  array[per_observation ? N : 0] real y_rep;
   real R_squared = square(R_magnitude);      // population explained share
-  {
+  if (per_observation) {
     vector[N] mu = alpha + Xc * b;
     for (n in 1:N) log_lik[n] = normal_lpdf(y[n] | mu[n], sigma);
     y_rep = normal_rng(mu, sigma);

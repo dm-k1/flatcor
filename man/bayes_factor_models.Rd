@@ -34,8 +34,9 @@ each model (the default draws are ten times those for estimation).}
 
 \item{seed}{Makes the result reproducible: Stan's seed for the first model
 (the second uses \code{seed + 1}), and the seed of R's random numbers that
-bridge sampling uses. Without it both are drawn from R's random numbers,
-so \code{set.seed()} beforehand does the same.}
+bridge sampling uses (R's own random state is put back afterwards).
+Without it the seed is drawn from R's random numbers, so
+\code{set.seed()} beforehand does the same.}
 
 \item{method}{\code{"normal"} (the default) or \code{"warp3"}, passed to
 \code{bridgesampling::bridge_sampler()}.}

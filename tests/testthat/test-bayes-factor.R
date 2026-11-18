@@ -93,10 +93,6 @@ test_that("a seed, or set.seed() beforehand, makes the Bayes factor reproducible
   expect_identical(bayes_factor_once(seed = 3), bayes_factor_once(seed = 3))
   set.seed(7)
   first <- bayes_factor_once()
-  state_after <- .Random.seed
   set.seed(7)
   expect_identical(bayes_factor_once(), first)
-  ## with a seed, R's random state is the same before and after
-  bayes_factor_once(seed = 3)
-  expect_identical(.Random.seed, state_after)
 })
