@@ -16,6 +16,9 @@ of the package's own any more.
   Bayes factor fit skips them (data `per_observation`). At n = 5000 with the
   default draws they took about 4.5 GB on disk and 3.2 GB in memory per
   model, enough to crash a worker.
+- The default backend is cmdstanr only when CmdStan itself is installed;
+  with just the cmdstanr R package it is rstan (before, fitting stopped with
+  "CmdStan path has not been set yet").
 - rstan and cmdstanr cannot both be used for Bayes factors in one R session;
   the help says so, and the tests run rstan in its own R process.
 - `bayes_factor_models()` fits each model with the chosen prior and estimates
