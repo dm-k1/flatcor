@@ -5,8 +5,9 @@
 \title{Bayes factor between any two linear models}
 \usage{
 bayes_factor_models(
-  model_a,
-  model_b,
+  formula_a,
+  formula_b,
+  data,
   prior = "flat_partial_r",
   chains = 4,
   iter_warmup = 1000,
@@ -18,7 +19,10 @@ bayes_factor_models(
 )
 }
 \arguments{
-\item{model_a, model_b}{Fits from \code{lm()} or \code{fit_regression()}.}
+\item{formula_a, formula_b}{The two models, as formulas with an intercept
+and the same outcome, such as \code{y ~ x1 + x2} and \code{y ~ x2}.}
+
+\item{data}{A data frame.}
 
 \item{prior}{\code{"flat_partial_r"} (every correlation matrix equally
 likely, R-squared ~ Beta(k/2, 1)), \code{"flat_r"} (R-squared ~
@@ -28,12 +32,18 @@ Beta(1, 1) for every k). The default is \code{"flat_partial_r"}.}
 \item{chains, iter_warmup, iter_sampling, adapt_delta}{Sampler settings for
 each model (the default draws are ten times those for estimation).}
 
-\item{seed}{A seed for the first model; the second uses \code{seed + 1}.}
+\item{seed}{Makes the result reproducible: Stan's seed for the first model
+(the second uses \code{seed + 1}), and the seed of R's random numbers that
+bridge sampling uses. Without it both are drawn from R's random numbers,
+so \code{set.seed()} beforehand does the same.}
 
 \item{method}{\code{"normal"} (the default) or \code{"warp3"}, passed to
 \code{bridgesampling::bridge_sampler()}.}
 
-\item{backend}{\code{"cmdstanr"} (default when installed) or \code{"rstan"}.}
+\item{backend}{\code{"cmdstanr"} (default when installed) or \code{"rstan"}.
+Use one backend per R session: once rstan is loaded, cmdstanr can no
+longer compute Bayes factors in that session. The validation
+(flatcor-validation) used cmdstanr.}
 }
 \value{
 A \code{flatcor_bayes_factor}: \code{$bayes_factor} (model A
@@ -42,12 +52,13 @@ SE of the log Bayes factor; \code{NA} for \code{"warp3"}), the two log
 marginal likelihoods and the divergent transitions of each fit.
 }
 \description{
-Nested or not, as long as both use the same outcome and data rows. Each
-model is fitted with the chosen prior (\code{inst/stan/flatcor.stan}), its
-marginal likelihood is estimated by bridge sampling
+Nested or not, as long as both have the same outcome. Each model is fitted
+with the chosen prior (\code{inst/stan/flatcor.stan}), its marginal
+likelihood is estimated by bridge sampling
 (\code{bridgesampling::bridge_sampler()}), and the Bayes factor is their
-ratio. A model with no predictors (\code{lm(y ~ 1)}) is the
-intercept-only model.
+ratio. A model with no predictors (\code{y ~ 1}) is the intercept-only
+model. Both models use the same rows: those with no missing value in any
+variable of either formula.
 }
 \details{
 The estimate has a Monte Carlo error. The reported error is
@@ -61,9 +72,7 @@ k numbers), so up to about 90 predictors stays within what has been shown.
 }
 \examples{
 \dontrun{
-bayes_factor_models(lm(mpg ~ wt + hp, mtcars), lm(mpg ~ wt, mtcars),
-                    prior = "flat_partial_r", seed = 1)
-bayes_factor_models(lm(mpg ~ wt + hp, mtcars), lm(mpg ~ 1, mtcars),
-                    prior = "flat_r", seed = 1)
+bayes_factor_models(mpg ~ wt + hp, mpg ~ wt, mtcars, prior = "flat_partial_r", seed = 1)
+bayes_factor_models(mpg ~ wt + hp, mpg ~ 1, mtcars, prior = "flat_r", seed = 1)
 }
 }

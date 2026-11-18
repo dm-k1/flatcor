@@ -13,6 +13,16 @@
 
 \item{...}{Passed to \code{bayesplot::ppc_dens_overlay()}.}
 }
+\value{
+A ggplot: the density of the outcome against the densities of
+\code{ndraws} datasets predicted from the posterior.
+}
 \description{
 Posterior predictive check for a flatcor fit
+}
+\examples{
+\dontrun{
+fit <- fit_regression(mpg ~ wt + hp, mtcars, prior = "flat_partial_r", seed = 1)
+pp_check(fit)
+}
 }

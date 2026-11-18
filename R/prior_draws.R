@@ -30,7 +30,8 @@ draw_coefficients_from_prior <- function(number_of_draws, predictor_covariance,
   f_squared  <- overall_correlation^2 / (1 - overall_correlation^2)
   directions <- MASS::mvrnorm(number_of_draws, mu = rep(0, number_of_predictors),
                               Sigma = solve(predictor_covariance))
-  directions <- matrix(directions, number_of_draws, number_of_predictors)   # keep a matrix when k = 1
+  # keep a matrix when k = 1
+  directions <- matrix(directions, number_of_draws, number_of_predictors)
   f_squared_of_direction <- rowSums((directions %*% predictor_covariance) * directions)
   sqrt(f_squared / f_squared_of_direction) * directions
 }

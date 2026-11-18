@@ -13,7 +13,17 @@
 
 \item{...}{Passed to \code{loo::loo()}.}
 }
+\value{
+A \code{loo} object (see \code{loo::loo()}): the expected log
+predictive density, its SE, and the Pareto k diagnostics per observation.
+}
 \description{
 Runs on one core by default: fast enough here, and forking the R session is
 not allowed in Positron or RStudio.
+}
+\examples{
+\dontrun{
+fit <- fit_regression(mpg ~ wt + hp, mtcars, prior = "flat_partial_r", seed = 1)
+loo(fit)
+}
 }
