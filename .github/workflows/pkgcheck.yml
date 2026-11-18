@@ -1,0 +1,20 @@
+# rOpenSci's pkgcheck: the automated check before an rOpenSci review (package
+# structure, documentation, goodpractice). On demand only (Actions >
+# pkgcheck > Run workflow): most of its advice is for a release, not for
+# every push.
+name: pkgcheck
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  issues: write
+
+jobs:
+  pkgcheck:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: ropensci-review-tools/pkgcheck-action@main
+        with:
+          post-to-issue: false
