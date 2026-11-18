@@ -1,3 +1,6 @@
+<!-- README.md is made from README.Rmd: edit README.Rmd or
+     inst/examples/quick_start.R, then run knitr::knit("README.Rmd") -->
+
 # flatcor
 
 Objective Bayes factors and estimation for linear regression, with priors
@@ -36,7 +39,8 @@ loaded, cmdstanr cannot compute Bayes factors in that session.
 
 ## Use
 
-```r
+
+``` r
 library(flatcor)
 
 ## the Bayes factor between any two linear models, nested or not
@@ -47,7 +51,9 @@ bayes_factor_models(mpg ~ wt + hp, mpg ~ 1, mtcars, seed = 1)
 
 ## estimation
 fit <- fit_regression(mpg ~ wt + hp, mtcars)
-fit; loo(fit); pp_check(fit)
+fit
+loo(fit)
+pp_check(fit)
 
 ## another prior
 bayes_factor_models(mpg ~ wt + hp, mpg ~ wt, mtcars, prior = "flat_r", seed = 1)

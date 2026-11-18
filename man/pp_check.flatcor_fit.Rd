@@ -21,8 +21,10 @@ A ggplot: the density of the outcome against the densities of
 Posterior predictive check for a flatcor fit
 }
 \examples{
-\dontrun{
-fit <- fit_regression(mpg ~ wt + hp, mtcars, prior = "flat_partial_r", seed = 1)
-pp_check(fit)
+# needs CmdStan (cmdstanr::install_cmdstan())
+if (requireNamespace("cmdstanr", quietly = TRUE) &&
+    !is.null(cmdstanr::cmdstan_version(error_on_NA = FALSE))) {
+  fit <- fit_regression(mpg ~ wt + hp, mtcars, prior = "flat_partial_r", seed = 1)
+  pp_check(fit)
 }
 }

@@ -73,8 +73,10 @@ k + 3 (k predictor columns: the intercept, the noise, R and a direction of
 k numbers), so up to about 90 predictors stays within what has been shown.
 }
 \examples{
-\dontrun{
-bayes_factor_models(mpg ~ wt + hp, mpg ~ wt, mtcars, prior = "flat_partial_r", seed = 1)
-bayes_factor_models(mpg ~ wt + hp, mpg ~ 1, mtcars, prior = "flat_r", seed = 1)
+# needs CmdStan (cmdstanr::install_cmdstan())
+if (requireNamespace("cmdstanr", quietly = TRUE) &&
+    !is.null(cmdstanr::cmdstan_version(error_on_NA = FALSE))) {
+  bayes_factor_models(mpg ~ wt + hp, mpg ~ wt, mtcars, prior = "flat_partial_r", seed = 1)
+  bayes_factor_models(mpg ~ wt + hp, mpg ~ 1, mtcars, prior = "flat_r", seed = 1)
 }
 }

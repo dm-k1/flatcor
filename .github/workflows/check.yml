@@ -1,11 +1,13 @@
 # Checks flatcor on every push and pull request: four independent jobs that
 # start at the same time, written from the quickest to the slowest.
 #
-#   lint               lintr, in the style of .lintr (seconds)
+#   lint               lintr, in the style of .lintr, and README.md up to date
+#                      with README.Rmd and its example file (seconds)
 #   check              R CMD check without Stan; the Stan tests skip
 #                      themselves (a few minutes)
-#   tests-cmdstanr     every test, with cmdstanr and CmdStan (CmdStan is
-#                      cached after the first run)
+#   tests-cmdstanr     every test, the help pages' examples and the README's
+#                      examples (inst/examples/quick_start.R), with cmdstanr
+#                      and CmdStan (CmdStan is cached after the first run)
 #   tests-rstan        the tests that use rstan (rstan from binary packages)
 #
 # rstan and cmdstanr get a job each, as they cannot share an R session for
@@ -36,7 +38,7 @@ jobs:
       - uses: r-lib/actions/setup-r-dependencies@v2
         with:
           dependencies: '"hard"'
-          extra-packages: any::lintr, local::.
+          extra-packages: any::lintr, any::knitr, local::.
           needs: lint
       - name: Lint
         run: |
@@ -44,6 +46,13 @@ jobs:
           print(lints)
           if (length(lints) > 0) quit(status = 1)
         shell: Rscript {0}
+      - name: README.md is made from README.Rmd and the current example file
+        run: |
+          Rscript -e 'knitr::knit("README.Rmd", "README.md", quiet = TRUE)'
+          git diff --exit-code README.md || {
+            echo "README.md is out of date: run knitr::knit(\"README.Rmd\") and commit it"
+            exit 1
+          }
 
   check:
     runs-on: ubuntu-latest
@@ -75,7 +84,7 @@ jobs:
         with:
           dependencies: '"hard"'
           extra-packages: >-
-            any::testthat, any::callr, any::pkgload,
+            any::testthat, any::callr, any::pkgload, any::devtools,
             stan-dev/cmdstanr, local::.
       - name: Cache CmdStan
         uses: actions/cache@v4
@@ -94,6 +103,11 @@ jobs:
           NOT_CRAN: true
         run: testthat::test_local(reporter = c("summary", "fail"))
         shell: Rscript {0}
+      - name: Run the help pages' examples
+        run: devtools::run_examples(run_donttest = TRUE, document = FALSE)
+        shell: Rscript {0}
+      - name: Run the README's examples
+        run: Rscript inst/examples/quick_start.R
 
   tests-rstan:
     runs-on: ubuntu-latest

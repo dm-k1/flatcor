@@ -16,6 +16,20 @@ of the package's own any more.
   Bayes factor fit skips them (data `per_observation`). At n = 5000 with the
   default draws they took about 4.5 GB on disk and 3.2 GB in memory per
   model, enough to crash a worker.
+- No more "proposal rejected" messages from Stan. A long trajectory now and
+  then overshoots into a region of practically zero probability, where R
+  rounded to 1 (an infinite f) or sigma to 0 or infinity, and a density
+  function stopped with an error that Stan printed before rejecting the
+  proposal. Such proposals now get log density -infinity instead, which
+  Stan rejects the same way without a message: the draws and divergent
+  transitions are identical to before, bit for bit.
+- A Bayes factor no longer fails after flatcor is reloaded in the same R
+  session ("Model methods cannot be used with a pre-compiled Stan
+  executable"): the version of the model with methods is compiled afresh
+  once per loaded package.
+- The README's examples live in `inst/examples/quick_start.R`, which
+  `README.Rmd` reads in; the help pages' examples run whenever CmdStan is
+  installed (no longer `\dontrun`). The checks run both on every push.
 - The default backend is cmdstanr only when CmdStan itself is installed;
   with just the cmdstanr R package it is rstan (before, fitting stopped with
   "CmdStan path has not been set yet").
