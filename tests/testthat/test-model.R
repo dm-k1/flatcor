@@ -1,8 +1,11 @@
 ## flatcor_model(), flatcor_density(), flatcor_stan_file(), flatcor_stan_data():
 ## what they give (no Stan needed), that the functions give the same result
 ## whether they build the model themselves or are given it, and that the Bayes
-## factor from BridgeStan's log density is identical to the one from
-## cmdstanr's model methods, which flatcor used before (version 2.0).
+## factor from BridgeStan's log density equals the one from cmdstanr's model
+## methods, which flatcor used before (version 2.0): mostly bit for bit, at
+## most a floating-point difference (2.8e-14 on the log scale in the
+## validation's smoke test, 5 of 132 Bayes factors), far below its Monte
+## Carlo error (about 0.01).
 
 model_data <- local({
   set.seed(3)
@@ -35,8 +38,7 @@ test_that("a model of the wrong kind is refused", {
 })
 
 test_that("given the model, or building it themselves, the functions give the same result", {
-  skip_on_cran()
-  skip_if_not(requireNamespace("cmdstanr", quietly = TRUE), "needs cmdstanr")
+  skip_without_cmdstan()
   model <- flatcor_model("cmdstanr")
   expect_s3_class(model, "CmdStanModel")
   expect_identical(flatcor_model("cmdstanr"), model)
@@ -58,8 +60,7 @@ test_that("given the model, or building it themselves, the functions give the sa
 })
 
 test_that("the cache folder can be chosen, and the builds are found there", {
-  skip_on_cran()
-  skip_if_not(requireNamespace("cmdstanr", quietly = TRUE), "needs cmdstanr")
+  skip_without_cmdstan()
   cache <- file.path(tempdir(), "flatcor_cache_test")
   model <- flatcor_model("cmdstanr", cache = cache)
   expect_true(startsWith(normalizePath(model$exe_file()), normalizePath(cache)))
@@ -68,10 +69,8 @@ test_that("the cache folder can be chosen, and the builds are found there", {
   expect_true(startsWith(normalizePath(density$library), normalizePath(cache)))
 })
 
-test_that("the Bayes factor from BridgeStan is identical to the one from model methods", {
-  skip_on_cran()
-  skip_if_not(requireNamespace("cmdstanr", quietly = TRUE), "needs cmdstanr")
-  skip_if_not(requireNamespace("bridgestan", quietly = TRUE), "needs bridgestan")
+test_that("the Bayes factor from BridgeStan equals the one from model methods", {
+  skip_without_bridgestan()
   ## flatcor 2.0's route: the model compiled with cmdstanr's model methods,
   ## and bridgesampling's method for cmdstanr fits, which uses them
   methods_folder <- file.path(tempdir(), "flatcor_methods")
@@ -99,6 +98,6 @@ test_that("the Bayes factor from BridgeStan is identical to the one from model m
     }, numeric(1))
     by_bridgestan <- bayes_factor_models(pair$formulas[[1]], pair$formulas[[2]], model_data,
                                          prior = pair$prior, iter_sampling = 1000, seed = 6)
-    expect_identical(by_bridgestan$log_bayes_factor, by_methods[1] - by_methods[2])
+    expect_equal(by_bridgestan$log_bayes_factor, by_methods[1] - by_methods[2], tolerance = 1e-10)
   }
 })

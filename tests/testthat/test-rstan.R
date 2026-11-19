@@ -26,6 +26,7 @@ test_that("fit_regression() and bayes_factor_models() run with rstan", {
   ## installed is enough: rstan is only loaded in the separate process
   skip_if_not(nzchar(system.file(package = "rstan")), "needs rstan")
   skip_if_not(requireNamespace("callr", quietly = TRUE), "needs callr")
+  skip_if_cores_limited()
   set.seed(2)
   data <- data.frame(x1 = rnorm(40), x2 = rnorm(40))
   data$y <- 0.4 * data$x1 + rnorm(40)

@@ -12,12 +12,8 @@ example_data <- local({
   data
 })
 
-## Bayes factors with cmdstanr take the log density from BridgeStan
-skip_without_stan <- function() {
-  skip_on_cran()
-  skip_if_not(requireNamespace("cmdstanr", quietly = TRUE), "needs cmdstanr")
-  skip_if_not(requireNamespace("bridgestan", quietly = TRUE), "needs bridgestan")
-}
+## Bayes factors with cmdstanr need CmdStan and bridgestan (helper-skips.R)
+skip_without_stan <- skip_without_bridgestan
 
 ## a Bayes factor estimate agrees with a reference within its Monte Carlo
 ## error: 5 times bridgesampling's approximate error (which can be optimistic),
