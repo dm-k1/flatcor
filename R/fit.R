@@ -1,6 +1,6 @@
 ## =====================================================================
-##  The Stan model: estimation (fit_regression()) and the fits behind
-##  every Bayes factor (bayes_factor_models())
+##  Sampling the posterior: estimation (fit_regression()) and the fits
+##  behind every Bayes factor (bayes_factor_models())
 ## =====================================================================
 ## The Stan model samples the prior in its own coordinates: R and a
 ## direction (uniform), with the coefficients computed from them. Sampling
@@ -8,44 +8,12 @@
 ## (flatcor-validation, studies 1a and 2a). With no predictors it is the
 ## intercept-only model.
 
-compiled_models <- new.env()   # compile once per session
-
-## The Stan model ships in inst/stan. For estimation, cmdstanr writes its
-## executable to a user cache folder, one per flatcor version, because the
-## installed package folder may not be writable and an executable from another
-## version must never be reused. Bayes factors also need the model methods
-## (the log density on the unconstrained scale, for bridgesampling), and
-## cmdstanr can only provide those in the R session that compiled the model:
-## that version is compiled once per session into the session's temporary
-## folder, so that parallel R processes never compile into the same file.
-compile_stan_model <- function(backend, model_methods = FALSE) {
-  key <- paste(backend, if (model_methods && backend == "cmdstanr") "methods" else "plain")
-  if (is.null(compiled_models[[key]])) {
-    stan_file <- system.file("stan", "flatcor.stan", package = "flatcor", mustWork = TRUE)
-    compiled_models[[key]] <- if (backend == "cmdstanr") {
-      executable_folder <- if (model_methods) {
-        file.path(tempdir(), "flatcor_stan")
-      } else {
-        version <- as.character(utils::packageVersion("flatcor"))
-        file.path(tools::R_user_dir("flatcor", which = "cache"), version)
-      }
-      dir.create(executable_folder, recursive = TRUE, showWarnings = FALSE)
-      # the version with model methods is compiled afresh once per loaded
-      # package: after flatcor is reloaded in the same session, cmdstanr
-      # refuses to add methods to the executable already in the temporary folder
-      cmdstanr::cmdstan_model(
-        stan_file,
-        dir = executable_folder,
-        compile_model_methods = model_methods,
-        force_recompile = model_methods,
-        quiet = TRUE
-      )
-    } else {
-      rstan::stan_model(stan_file)
-    }
-  }
-  compiled_models[[key]]
-}
+## The model itself is built by flatcor_model() and its log density by
+## flatcor_density() (R/model.R). compile_stan_model() is kept for code that
+## called it before (flatcor-validation): the model for a backend. The model
+## methods it used to add are no longer used; the Bayes factors take the log
+## density from flatcor_density().
+compile_stan_model <- function(backend, model_methods = FALSE) flatcor_model(backend)
 
 ## A random seed when none is given, drawn from R's random numbers (so
 ## set.seed() beforehand makes the result reproducible, as in rstanarm). One
@@ -78,18 +46,16 @@ default_backend <- function() {
 }
 
 ## Sample the posterior of one model: predictors (a matrix, possibly with no
-## columns) and outcome. Returns the backend's fit and its number of
-## divergent transitions. per_observation: also draw log_lik and y_rep (for
-## loo and pp_check; a Bayes factor does not need them).
+## columns) and outcome, with `model` (flatcor_model()). Returns the backend's
+## fit, its number of divergent transitions and the data Stan got.
+## per_observation: also draw log_lik and y_rep (for loo and pp_check; a
+## Bayes factor does not need them).
 sample_posterior <- function(predictors, outcome, prior, chains, iter_warmup, iter_sampling,
-                             adapt_delta, seed, backend, model_methods = FALSE,
+                             adapt_delta, seed, backend, model = flatcor_model(backend),
                              per_observation = FALSE) {
   check_full_rank(predictors)
-  stan_data <- list(N = length(outcome), K = ncol(predictors), X = predictors, y = outcome,
-                    prior_only = 0L, proper_stand_ins = 0L,
-                    per_observation = as.integer(per_observation),
-                    r_squared_shape = prior_shape(prior, ncol(predictors)))
-  model <- compile_stan_model(backend, model_methods)
+  check_model(model, backend)
+  stan_data <- stan_data_of(predictors, outcome, prior, per_observation)
   if (backend == "cmdstanr") {
     fit <- model$sample(data = stan_data, chains = chains, parallel_chains = chains,
                         iter_warmup = iter_warmup, iter_sampling = iter_sampling,
@@ -103,7 +69,7 @@ sample_posterior <- function(predictors, outcome, prior, chains, iter_warmup, it
     divergent <- rstan::get_num_divergent(fit)
   }
   if (divergent > 0) warning(divergent, " divergent transitions; check the fit.", call. = FALSE)
-  list(fit = fit, divergent = divergent)
+  list(fit = fit, divergent = divergent, stan_data = stan_data)
 }
 
 ## A column that is a combination of the others (aliased, or constant) would
@@ -162,6 +128,8 @@ predictors_and_outcome <- function(formula, rows) {
 #'   Use one backend per R session: once rstan is loaded, cmdstanr can no
 #'   longer compute Bayes factors in that session. The validation
 #'   (flatcor-validation) used cmdstanr.
+#' @param model The model to sample: \code{flatcor_model(backend)}, built once
+#'   and reused (see \code{flatcor_model()} for parallel processes).
 #' @param prior \code{"flat_partial_r"} (every correlation matrix equally
 #'   likely, R-squared ~ Beta(k/2, 1)), \code{"flat_r"} (R-squared ~
 #'   Beta(1/2, 1) for every k) or \code{"flat_r_squared"} (R-squared ~
@@ -180,7 +148,7 @@ predictors_and_outcome <- function(formula, rows) {
 #' @export
 fit_regression <- function(formula, data, prior = "flat_partial_r", chains = 4, iter_warmup = 1000,
                            iter_sampling = 1000, adapt_delta = 0.95, seed = NULL,
-                           backend = default_backend()) {
+                           backend = default_backend(), model = flatcor_model(backend)) {
   prior <- check_prior(prior, defaulted = missing(prior))
   parts <- predictors_and_outcome(formula, complete_rows(data, list(formula)))
   predictors <- parts$predictors
@@ -189,7 +157,7 @@ fit_regression <- function(formula, data, prior = "flat_partial_r", chains = 4, 
   if (is.null(seed)) seed <- random_seed()
 
   sampled <- sample_posterior(predictors, outcome, prior, chains, iter_warmup, iter_sampling,
-                              adapt_delta, seed, backend, per_observation = TRUE)
+                              adapt_delta, seed, backend, model, per_observation = TRUE)
   all_draws <- if (backend == "cmdstanr") {
     posterior::as_draws_df(sampled$fit$draws())
   } else {

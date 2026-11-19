@@ -12,9 +12,11 @@ example_data <- local({
   data
 })
 
+## Bayes factors with cmdstanr take the log density from BridgeStan
 skip_without_stan <- function() {
   skip_on_cran()
   skip_if_not(requireNamespace("cmdstanr", quietly = TRUE), "needs cmdstanr")
+  skip_if_not(requireNamespace("bridgestan", quietly = TRUE), "needs bridgestan")
 }
 
 ## a Bayes factor estimate agrees with a reference within its Monte Carlo
@@ -53,9 +55,9 @@ test_that("the intercept-only model's marginal likelihood matches its closed for
     (n - 1) / 2 * log(sst / 2)
   sampled <- sample_posterior(matrix(0, n, 0), y, "flat_r", chains = 4, iter_warmup = 1000,
                               iter_sampling = 5000, adapt_delta = 0.95, seed = 1,
-                              backend = "cmdstanr", model_methods = TRUE)
-  bridge <- bridgesampling::bridge_sampler(sampled$fit, silent = TRUE)
-  expect_within_error(bridge$logml, closed_form, bridgesampling::error_measures(bridge)$cv)
+                              backend = "cmdstanr")
+  bridge <- log_marginal_likelihood(sampled, "cmdstanr", flatcor_density(), "normal", seed = 1)
+  expect_within_error(bridge$log_marginal_likelihood, closed_form, bridge$error)
 })
 
 test_that("every prior's Bayes factor against the intercept-only model matches its reference", {

@@ -19,6 +19,72 @@
 ##     it helps when the posterior is skewed.
 ## The intercept and the noise have improper priors (flat and 1/sigma), the
 ## same in both models, so their arbitrary constant cancels in the ratio.
+##
+## Bridge sampling evaluates each model's log density at many points on
+## Stan's unconstrained scale. With cmdstanr that log density comes from
+## BridgeStan's library (flatcor_density()), built once and loaded with each
+## model's data; with rstan, from rstan's fit itself. Both are Stan's log
+## density up to a constant, with the Jacobian (what cmdstanr's and rstan's
+## log_prob give), which is enough here because flatcor.stan writes every
+## density with all its normalising constants.
+
+## The log marginal likelihood of one sampled model (sample_posterior()) and
+## its approximate error, by bridge sampling. seed: of R's random numbers,
+## which bridge sampling uses (put back afterwards).
+log_marginal_likelihood <- function(sampled, backend, density, method, seed) {
+  bridge <- if (backend == "rstan") {
+    with_seed(seed, bridgesampling::bridge_sampler(sampled$fit, method = method, silent = TRUE))
+  } else {
+    if (!inherits(density, "flatcor_density")) {
+      stop("density = must be flatcor_density().", call. = FALSE)
+    }
+    # the log density: BridgeStan's library, loaded with this model's data
+    data_file <- tempfile(fileext = ".json")
+    on.exit(unlink(data_file))
+    cmdstanr::write_stan_json(sampled$stan_data, data_file)
+    log_density <- bridgestan::StanModel$new(density$library, data_file, seed = 1, warn = FALSE)
+
+    # the posterior draws on Stan's unconstrained scale
+    draws <- posterior::as_draws_matrix(
+      sampled$fit$draws(stan_variable_names(log_density$param_names()))
+    )
+    unconstrained <- t(apply(unclass(draws), 1, log_density$param_unconstrain))
+    colnames(unconstrained) <- log_density$param_unc_names()
+    bound <- stats::setNames(rep(Inf, ncol(unconstrained)), colnames(unconstrained))
+
+    with_seed(seed, bridgesampling::bridge_sampler(
+      unconstrained,
+      log_posterior = log_posterior_bridgestan,
+      data = log_density,
+      lb = -bound,
+      ub = bound,
+      method = method,
+      silent = TRUE
+    ))
+  }
+  list(
+    log_marginal_likelihood = bridge$logml,
+    error = if (method == "normal") bridgesampling::error_measures(bridge)$cv else NA_real_
+  )
+}
+
+## The log density at one draw (unconstrained), for bridgesampling, which
+## calls it with these argument names
+log_posterior_bridgestan <- function(s.row, data) { # nolint: object_name_linter.
+  tryCatch(
+    data$log_density(as.numeric(s.row), propto = TRUE, jacobian = TRUE),
+    error = function(e) -Inf
+  )
+}
+
+## BridgeStan names the elements of a parameter z.1 (and a.1.2); cmdstanr
+## z[1] (and a[1,2])
+stan_variable_names <- function(bridgestan_names) {
+  vapply(strsplit(bridgestan_names, ".", fixed = TRUE), function(parts) {
+    if (length(parts) == 1) parts else
+      sprintf("%s[%s]", parts[1], paste(parts[-1], collapse = ","))
+  }, character(1))
+}
 
 #' Bayes factor between any two linear models
 #'
@@ -50,6 +116,11 @@
 #'   \code{set.seed()} beforehand does the same.
 #' @param method \code{"normal"} (the default) or \code{"warp3"}, passed to
 #'   \code{bridgesampling::bridge_sampler()}.
+#' @param model The model to sample, for both models:
+#'   \code{flatcor_model(backend)}.
+#' @param density With cmdstanr, the log density bridge sampling evaluates:
+#'   \code{flatcor_density()} (needs the bridgestan package). Not used with
+#'   rstan. See \code{flatcor_model()} for parallel processes.
 #' @return A \code{flatcor_bayes_factor}: \code{$bayes_factor} (model A
 #'   against model B), \code{$log_bayes_factor}, \code{$error} (approximate
 #'   SE of the log Bayes factor; \code{NA} for \code{"warp3"}), the two log
@@ -64,7 +135,9 @@
 #' @export
 bayes_factor_models <- function(formula_a, formula_b, data, prior = "flat_partial_r", chains = 4,
                                 iter_warmup = 1000, iter_sampling = 10000, adapt_delta = 0.95,
-                                seed = NULL, method = "normal", backend = default_backend()) {
+                                seed = NULL, method = "normal", backend = default_backend(),
+                                model = flatcor_model(backend),
+                                density = if (backend == "cmdstanr") flatcor_density()) {
   prior  <- check_prior(prior, defaulted = missing(prior))
   method <- match.arg(method, c("normal", "warp3"))
   rows <- complete_rows(data, list(formula_a, formula_b))
@@ -85,14 +158,9 @@ bayes_factor_models <- function(formula_a, formula_b, data, prior = "flat_partia
     model_parts <- parts[[offset + 1]]
     sampled <- sample_posterior(model_parts$predictors, model_parts$outcome, prior, chains,
                                 iter_warmup, iter_sampling, adapt_delta, seed + offset, backend,
-                                model_methods = TRUE)
-    bridge <- with_seed(
-      seed + offset,
-      bridgesampling::bridge_sampler(sampled$fit, method = method, silent = TRUE)
-    )
-    list(log_marginal_likelihood = bridge$logml,
-         error = if (method == "normal") bridgesampling::error_measures(bridge)$cv else NA_real_,
-         divergent = sampled$divergent)
+                                model)
+    c(log_marginal_likelihood(sampled, backend, density, method, seed + offset),
+      divergent = sampled$divergent)
   })
   log_bayes_factor <- per_model$a$log_marginal_likelihood - per_model$b$log_marginal_likelihood
   structure(list(bayes_factor     = exp(log_bayes_factor),

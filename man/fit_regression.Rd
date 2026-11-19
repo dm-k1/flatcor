@@ -13,7 +13,8 @@ fit_regression(
   iter_sampling = 1000,
   adapt_delta = 0.95,
   seed = NULL,
-  backend = default_backend()
+  backend = default_backend(),
+  model = flatcor_model(backend)
 )
 }
 \arguments{
@@ -33,6 +34,9 @@ or \code{"rstan"} (the default otherwise).
 Use one backend per R session: once rstan is loaded, cmdstanr can no
 longer compute Bayes factors in that session. The validation
 (flatcor-validation) used cmdstanr.}
+
+\item{model}{The model to sample: \code{flatcor_model(backend)}, built once
+and reused (see \code{flatcor_model()} for parallel processes).}
 }
 \value{
 A \code{flatcor_fit}: \code{print()} shows estimates and diagnostics,

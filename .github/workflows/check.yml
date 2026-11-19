@@ -7,7 +7,9 @@
 #                      themselves (a few minutes)
 #   tests-cmdstanr     every test, the help pages' examples and the README's
 #                      examples (inst/examples/quick_start.R), with cmdstanr
-#                      and CmdStan (CmdStan is cached after the first run)
+#                      and CmdStan (CmdStan is cached after the first run),
+#                      and bridgestan for the Bayes factors (BridgeStan's
+#                      sources are downloaded on its first build)
 #   tests-rstan        the tests that use rstan (rstan from binary packages)
 #
 # rstan and cmdstanr get a job each, as they cannot share an R session for
@@ -16,7 +18,7 @@ name: Check
 
 on:
   push:
-    branches: [main]
+    branches: [main, v2]
   pull_request:
   workflow_dispatch:
 
@@ -97,6 +99,11 @@ jobs:
             cmdstanr::install_cmdstan(version = "2.40.0", cores = parallel::detectCores())
           }
           cmdstanr::cmdstan_version()
+        shell: Rscript {0}
+      - name: Install bridgestan
+        run: |
+          install.packages("bridgestan", repos = "https://r-multiverse.r-universe.dev")
+          packageVersion("bridgestan")
         shell: Rscript {0}
       - name: Run every test
         env:

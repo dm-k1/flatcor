@@ -1,6 +1,6 @@
 Package: flatcor
 Title: Objective Bayes for Linear Regression with Flat Correlations
-Version: 2.0.0.9000
+Version: 2.1.0.9000
 Authors@R:
     person("Diemithry M.", "Kloppenburg", email = "diemithrykloppenburg@hotmail.com",
            role = c("aut", "cre"))
@@ -17,7 +17,10 @@ Description: Bayes factors and estimation for linear regression with
     <https://github.com/dm-k1/flatcor-validation>. One 'Stan' model, which samples
     the prior in its own coordinates (R and a direction), gives the
     posterior for estimation and, through bridge sampling ('bridgesampling'),
-    the Bayes factor between any two linear models.
+    the Bayes factor between any two linear models; with 'cmdstanr', bridge
+    sampling takes the model's log density from 'BridgeStan'. The model and
+    its log density are built once and kept as files, so parallel processes
+    reuse them.
 License: MIT + file LICENSE
 Encoding: UTF-8
 Roxygen: list(markdown = TRUE)
@@ -32,6 +35,7 @@ Imports:
     bayesplot,
     bridgesampling (>= 1.2.1)
 Suggests:
+    bridgestan,
     cmdstanr,
     rstan,
     BayesFactor,
@@ -40,6 +44,6 @@ Suggests:
     testthat (>= 3.0.0)
 URL: https://github.com/dm-k1/flatcor
 BugReports: https://github.com/dm-k1/flatcor/issues
-Additional_repositories: https://stan-dev.r-universe.dev
+Additional_repositories: https://stan-dev.r-universe.dev, https://r-multiverse.r-universe.dev
 Config/testthat/edition: 3
 Config/roxygen2/version: 8.1.0
