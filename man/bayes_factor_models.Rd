@@ -15,7 +15,9 @@ bayes_factor_models(
   adapt_delta = 0.95,
   seed = NULL,
   method = "normal",
-  backend = default_backend()
+  backend = default_backend(),
+  model = flatcor_model(backend),
+  density = if (backend == "cmdstanr") flatcor_density()
 )
 }
 \arguments{
@@ -46,6 +48,13 @@ or \code{"rstan"} (the default otherwise).
 Use one backend per R session: once rstan is loaded, cmdstanr can no
 longer compute Bayes factors in that session. The validation
 (flatcor-validation) used cmdstanr.}
+
+\item{model}{The model to sample, for both models:
+\code{flatcor_model(backend)}.}
+
+\item{density}{With cmdstanr, the log density bridge sampling evaluates:
+\code{flatcor_density()} (needs the bridgestan package). Not used with
+rstan. See \code{flatcor_model()} for parallel processes.}
 }
 \value{
 A \code{flatcor_bayes_factor}: \code{$bayes_factor} (model A
