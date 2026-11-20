@@ -19,7 +19,10 @@ draw_coefficients_from_prior(
 \code{"flat_r_squared"}.}
 }
 \value{
-A matrix with one coefficient set per row.
+A matrix with one coefficient set per row, with what each set was
+drawn from as attributes: \code{"R_squared"} and \code{"f_squared"}
+(one per row) and \code{"direction"} (the unscaled direction, a matrix
+like the result).
 }
 \description{
 The prior as a recipe, in units of the noise (sigma = 1):

@@ -47,7 +47,8 @@ default_backend <- function() {
 
 ## Sample the posterior of one model: predictors (a matrix, possibly with no
 ## columns) and outcome, with `model` (flatcor_model()). Returns the backend's
-## fit, its number of divergent transitions and the data Stan got.
+## fit, its number of divergent transitions, the data Stan got, the seed and
+## the seconds sampling took (wall clock, all chains).
 ## per_observation: also draw log_lik and y_rep (for loo and pp_check; a
 ## Bayes factor does not need them).
 sample_posterior <- function(predictors, outcome, prior, chains, iter_warmup, iter_sampling,
@@ -56,6 +57,7 @@ sample_posterior <- function(predictors, outcome, prior, chains, iter_warmup, it
   check_full_rank(predictors)
   check_model(model, backend)
   stan_data <- stan_data_of(predictors, outcome, prior, per_observation)
+  started <- proc.time()[["elapsed"]]
   if (backend == "cmdstanr") {
     fit <- model$sample(data = stan_data, chains = chains, parallel_chains = chains,
                         iter_warmup = iter_warmup, iter_sampling = iter_sampling,
@@ -68,8 +70,87 @@ sample_posterior <- function(predictors, outcome, prior, chains, iter_warmup, it
                            control = list(adapt_delta = adapt_delta), seed = seed, refresh = 0)
     divergent <- rstan::get_num_divergent(fit)
   }
+  seconds <- proc.time()[["elapsed"]] - started
   if (divergent > 0) warning(divergent, " divergent transitions; check the fit.", call. = FALSE)
-  list(fit = fit, divergent = divergent, stan_data = stan_data)
+  list(fit = fit, divergent = divergent, stan_data = stan_data, seed = seed, seconds = seconds)
+}
+
+## ---- What a fit holds besides its draws ---------------------------------------------
+## Everything the backend computed comes out (the package's rule: nothing
+## that would be there without flatcor goes missing because of it).
+
+## All draws of every Stan variable, as a posterior::draws_array
+stan_draws <- function(fit, backend) {
+  if (backend == "cmdstanr") fit$draws() else posterior::as_draws_array(as.array(fit))
+}
+
+## The sampler's diagnostics per chain: divergent transitions, transitions
+## that hit the maximum tree depth, E-BFMI, the adapted step size, the mean
+## number of leapfrog steps, and the seconds of warmup and sampling Stan
+## reports
+sampler_by_chain <- function(fit, backend) {
+  if (backend == "cmdstanr") {
+    summary <- fit$diagnostic_summary(quiet = TRUE)
+    per_draw <- posterior::as_draws_df(fit$sampler_diagnostics())
+    times <- fit$time()$chains
+    by_chain <- split(as.data.frame(per_draw), per_draw$.chain)
+    data.frame(
+      chain = seq_along(by_chain),
+      divergent = summary$num_divergent,
+      max_treedepth_hits = summary$num_max_treedepth,
+      max_treedepth = fit$metadata()$max_treedepth,
+      ebfmi = summary$ebfmi,
+      step_size = vapply(by_chain, function(chain) chain$stepsize__[1], numeric(1)),
+      mean_leapfrog_steps = vapply(by_chain, function(chain) mean(chain$n_leapfrog__), numeric(1)),
+      warmup_seconds = times$warmup,
+      sampling_seconds = times$sampling,
+      row.names = NULL
+    )
+  } else {
+    per_chain <- rstan::get_sampler_params(fit, inc_warmup = FALSE)
+    max_treedepth <- fit@stan_args[[1]]$control$max_treedepth
+    if (is.null(max_treedepth)) max_treedepth <- 10
+    times <- rstan::get_elapsed_time(fit)
+    data.frame(
+      chain = seq_along(per_chain),
+      divergent = vapply(per_chain, function(chain) sum(chain[, "divergent__"]), numeric(1)),
+      max_treedepth_hits = vapply(per_chain, function(chain) {
+        sum(chain[, "treedepth__"] >= max_treedepth)
+      }, numeric(1)),
+      max_treedepth = max_treedepth,
+      ebfmi = unname(rstan::get_bfmi(fit)),
+      step_size = vapply(per_chain, function(chain) chain[1, "stepsize__"], numeric(1)),
+      mean_leapfrog_steps = vapply(per_chain, function(chain) mean(chain[, "n_leapfrog__"]),
+                                   numeric(1)),
+      warmup_seconds = unname(times[, "warmup"]),
+      sampling_seconds = unname(times[, "sample"]),
+      row.names = NULL
+    )
+  }
+}
+
+## A summary of every Stan variable: posterior's default summaries (mean,
+## median, sd, mad, 5% and 95% quantiles), the 2.5% and 97.5% quantiles,
+## R-hat and the bulk and tail ESS
+summarise_stan_draws <- function(draws) {
+  as.data.frame(posterior::summarise_draws(
+    draws,
+    "mean", "median", "sd", "mad",
+    ~ posterior::quantile2(.x, probs = c(0.025, 0.05, 0.95, 0.975)),
+    "rhat", "ess_bulk", "ess_tail"
+  ))
+}
+
+## A cmdstanr fit reads its draws from CSV files in R's temporary folder,
+## which are gone once the R session ends. Read everything into the object,
+## so a saved fit keeps working (what cmdstanr's $save_object() does).
+fit_in_memory <- function(fit, backend) {
+  if (backend == "cmdstanr") {
+    fit$draws()
+    try(fit$sampler_diagnostics(), silent = TRUE)
+    try(fit$init(), silent = TRUE)
+  }
+  fit
 }
 
 ## A column that is a combination of the others (aliased, or constant) would
@@ -135,8 +216,27 @@ predictors_and_outcome <- function(formula, rows) {
 #'   Beta(1/2, 1) for every k) or \code{"flat_r_squared"} (R-squared ~
 #'   Beta(1, 1) for every k). The default is \code{"flat_partial_r"}.
 #' @return A \code{flatcor_fit}: \code{print()} shows estimates and diagnostics,
-#'   \code{loo()} and \code{pp_check()} work as usual, and \code{$draws}
-#'   holds all posterior draws as a \code{posterior::draws_df}.
+#'   \code{loo()} and \code{pp_check()} work as usual. It holds:
+#'   \describe{
+#'     \item{\code{$draws}}{The posterior draws of the coefficients (under
+#'       their own names, the intercept on the data's scale), sigma and
+#'       R_squared, as a \code{posterior::draws_df}.}
+#'     \item{\code{$log_lik}, \code{$y_rep}}{Per draw and observation, for
+#'       \code{loo()} and \code{pp_check()}.}
+#'     \item{\code{$fit}}{The backend's own fit (\code{CmdStanMCMC} or
+#'       \code{stanfit}) with every Stan variable, such as R, Cohen's f and
+#'       the direction; its draws are read into memory, so a saved fit keeps
+#'       working.}
+#'     \item{\code{$sampler}}{The sampler's diagnostics per chain: divergent
+#'       transitions, hits of the maximum tree depth, E-BFMI, step size, mean
+#'       leapfrog steps, seconds of warmup and sampling.}
+#'     \item{\code{$seconds}, \code{$seed}, \code{$backend},
+#'       \code{$stan_data}}{Wall-clock seconds of sampling, the seed used
+#'       (drawn when none was given), the backend and the data Stan got.}
+#'     \item{\code{$outcome}, \code{$predictors}, \code{$formula},
+#'       \code{$prior}, \code{$divergent}, \code{$chain_ids}}{What was
+#'       fitted, and the divergent transitions in all chains.}
+#'   }
 #' @examples
 #' # needs CmdStan (cmdstanr::install_cmdstan())
 #' if (requireNamespace("cmdstanr", quietly = TRUE) &&
@@ -158,11 +258,7 @@ fit_regression <- function(formula, data, prior = "flat_partial_r", chains = 4, 
 
   sampled <- sample_posterior(predictors, outcome, prior, chains, iter_warmup, iter_sampling,
                               adapt_delta, seed, backend, model, per_observation = TRUE)
-  all_draws <- if (backend == "cmdstanr") {
-    posterior::as_draws_df(sampled$fit$draws())
-  } else {
-    posterior::as_draws_df(as.array(sampled$fit))
-  }
+  all_draws <- posterior::as_draws_df(stan_draws(sampled$fit, backend))
   draws_of <- function(variable) {
     unclass(posterior::as_draws_matrix(posterior::subset_draws(all_draws, variable = variable)))
   }
@@ -186,7 +282,13 @@ fit_regression <- function(formula, data, prior = "flat_partial_r", chains = 4, 
                  predictors   = predictors,
                  formula      = formula,
                  prior        = prior,
-                 divergent    = sampled$divergent),
+                 divergent    = sampled$divergent,
+                 sampler      = sampler_by_chain(sampled$fit, backend),
+                 seconds      = sampled$seconds,
+                 seed         = seed,
+                 backend      = backend,
+                 stan_data    = sampled$stan_data,
+                 fit          = fit_in_memory(sampled$fit, backend)),
             class = "flatcor_fit")
 }
 

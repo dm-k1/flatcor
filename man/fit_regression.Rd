@@ -40,8 +40,27 @@ and reused (see \code{flatcor_model()} for parallel processes).}
 }
 \value{
 A \code{flatcor_fit}: \code{print()} shows estimates and diagnostics,
-\code{loo()} and \code{pp_check()} work as usual, and \code{$draws}
-holds all posterior draws as a \code{posterior::draws_df}.
+\code{loo()} and \code{pp_check()} work as usual. It holds:
+\describe{
+\item{\code{$draws}}{The posterior draws of the coefficients (under
+their own names, the intercept on the data's scale), sigma and
+R_squared, as a \code{posterior::draws_df}.}
+\item{\code{$log_lik}, \code{$y_rep}}{Per draw and observation, for
+\code{loo()} and \code{pp_check()}.}
+\item{\code{$fit}}{The backend's own fit (\code{CmdStanMCMC} or
+\code{stanfit}) with every Stan variable, such as R, Cohen's f and
+the direction; its draws are read into memory, so a saved fit keeps
+working.}
+\item{\code{$sampler}}{The sampler's diagnostics per chain: divergent
+transitions, hits of the maximum tree depth, E-BFMI, step size, mean
+leapfrog steps, seconds of warmup and sampling.}
+\item{\code{$seconds}, \code{$seed}, \code{$backend},
+\code{$stan_data}}{Wall-clock seconds of sampling, the seed used
+(drawn when none was given), the backend and the data Stan got.}
+\item{\code{$outcome}, \code{$predictors}, \code{$formula},
+\code{$prior}, \code{$divergent}, \code{$chain_ids}}{What was
+fitted, and the divergent transitions in all chains.}
+}
 }
 \description{
 Samples the prior in its own coordinates, the overall correlation R

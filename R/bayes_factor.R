@@ -29,9 +29,11 @@
 ## density with all its normalising constants.
 
 ## The log marginal likelihood of one sampled model (sample_posterior()) and
-## its approximate error, by bridge sampling. seed: of R's random numbers,
+## its approximate error, by bridge sampling, with bridge sampling's whole
+## result ($bridge) and the seconds it took. seed: of R's random numbers,
 ## which bridge sampling uses (put back afterwards).
 log_marginal_likelihood <- function(sampled, backend, density, method, seed) {
+  started <- proc.time()[["elapsed"]]
   bridge <- if (backend == "rstan") {
     with_seed(seed, bridgesampling::bridge_sampler(sampled$fit, method = method, silent = TRUE))
   } else {
@@ -62,10 +64,45 @@ log_marginal_likelihood <- function(sampled, backend, density, method, seed) {
       silent = TRUE
     ))
   }
+  seconds <- proc.time()[["elapsed"]] - started
+  error_measures <- if (method == "normal") bridgesampling::error_measures(bridge)
   list(
     log_marginal_likelihood = bridge$logml,
-    error = if (method == "normal") bridgesampling::error_measures(bridge)$cv else NA_real_
+    error = if (method == "normal") error_measures$cv else NA_real_,
+    error_measures = error_measures,
+    bridge = bridge,
+    seconds = seconds
   )
+}
+
+## Everything about one model of a Bayes factor: its marginal likelihood and
+## bridge sampling, the sampler's diagnostics, a summary of every Stan
+## variable, the timings and the seed. keep_fits: also the Stan fit (read
+## into memory), bridge sampling's object and the data Stan got.
+model_details <- function(sampled, bridged, backend, keep_fits) {
+  details <- list(
+    log_marginal_likelihood = bridged$log_marginal_likelihood,
+    error = bridged$error,
+    bridge_sampling = list(
+      method = bridged$bridge$method,
+      iterations = bridged$bridge$niter,
+      repetitions = bridged$bridge$repetitions,
+      error_measures = bridged$error_measures
+    ),
+    divergent = sampled$divergent,
+    sampler = sampler_by_chain(sampled$fit, backend),
+    summary = summarise_stan_draws(stan_draws(sampled$fit, backend)),
+    seconds = c(sampling = sampled$seconds, bridge_sampling = bridged$seconds),
+    seed = sampled$seed,
+    predictors = sampled$stan_data$K,
+    n = sampled$stan_data$N
+  )
+  if (keep_fits) {
+    details$fit <- fit_in_memory(sampled$fit, backend)
+    details$bridge_sampler <- bridged$bridge
+    details$stan_data <- sampled$stan_data
+  }
+  details
 }
 
 ## The log density at one draw (unconstrained), for bridgesampling, which
@@ -121,10 +158,31 @@ stan_variable_names <- function(bridgestan_names) {
 #' @param density With cmdstanr, the log density bridge sampling evaluates:
 #'   \code{flatcor_density()} (needs the bridgestan package). Not used with
 #'   rstan. See \code{flatcor_model()} for parallel processes.
-#' @return A \code{flatcor_bayes_factor}: \code{$bayes_factor} (model A
-#'   against model B), \code{$log_bayes_factor}, \code{$error} (approximate
-#'   SE of the log Bayes factor; \code{NA} for \code{"warp3"}), the two log
-#'   marginal likelihoods and the divergent transitions of each fit.
+#' @param keep_fits Also return each model's Stan fit (with all draws, read
+#'   into memory), bridge sampling's object and the data Stan got. Off by
+#'   default: the fits hold every draw, too much to keep for many Bayes
+#'   factors; the summaries below come out either way.
+#' @return A \code{flatcor_bayes_factor}:
+#'   \describe{
+#'     \item{\code{$bayes_factor}, \code{$log_bayes_factor}}{Model A against
+#'       model B.}
+#'     \item{\code{$error}}{Approximate SE of the log Bayes factor, the two
+#'       models' errors combined (\code{NA} for \code{"warp3"}).}
+#'     \item{\code{$log_marginal_likelihoods}, \code{$divergent}}{Per model.}
+#'     \item{\code{$models}}{Everything per model (\code{$a} and \code{$b}):
+#'       the log marginal likelihood and its own error; bridge sampling's
+#'       method, iterations and error measures; \code{$sampler}, the
+#'       sampler's diagnostics per chain (divergent transitions, hits of the
+#'       maximum tree depth, E-BFMI, step size, mean leapfrog steps, seconds
+#'       of warmup and sampling); \code{$summary}, every Stan variable's
+#'       mean, median, sd, mad, quantiles, R-hat and bulk and tail ESS;
+#'       \code{$seconds} of sampling and of bridge sampling; the seed, the
+#'       number of predictors and n. With \code{keep_fits = TRUE} also
+#'       \code{$fit}, \code{$bridge_sampler} and \code{$stan_data}.}
+#'     \item{\code{$seed}, \code{$prior}, \code{$method}, \code{$draws},
+#'       \code{$predictors}, \code{$backend}}{The seed used (drawn when none
+#'       was given), and the settings.}
+#'   }
 #' @examples
 #' # needs CmdStan (cmdstanr::install_cmdstan())
 #' if (requireNamespace("cmdstanr", quietly = TRUE) &&
@@ -137,7 +195,8 @@ bayes_factor_models <- function(formula_a, formula_b, data, prior = "flat_partia
                                 iter_warmup = 1000, iter_sampling = 10000, adapt_delta = 0.95,
                                 seed = NULL, method = "normal", backend = default_backend(),
                                 model = flatcor_model(backend),
-                                density = if (backend == "cmdstanr") flatcor_density()) {
+                                density = if (backend == "cmdstanr") flatcor_density(),
+                                keep_fits = FALSE) {
   prior  <- check_prior(prior, defaulted = missing(prior))
   method <- match.arg(method, c("normal", "warp3"))
   rows <- complete_rows(data, list(formula_a, formula_b))
@@ -159,8 +218,8 @@ bayes_factor_models <- function(formula_a, formula_b, data, prior = "flat_partia
     sampled <- sample_posterior(model_parts$predictors, model_parts$outcome, prior, chains,
                                 iter_warmup, iter_sampling, adapt_delta, seed + offset, backend,
                                 model)
-    c(log_marginal_likelihood(sampled, backend, density, method, seed + offset),
-      divergent = sampled$divergent)
+    bridged <- log_marginal_likelihood(sampled, backend, density, method, seed + offset)
+    model_details(sampled, bridged, backend, keep_fits)
   })
   log_bayes_factor <- per_model$a$log_marginal_likelihood - per_model$b$log_marginal_likelihood
   structure(list(bayes_factor     = exp(log_bayes_factor),
@@ -170,7 +229,8 @@ bayes_factor_models <- function(formula_a, formula_b, data, prior = "flat_partia
                                               b = per_model$b$log_marginal_likelihood),
                  divergent        = c(a = per_model$a$divergent, b = per_model$b$divergent),
                  prior = prior, method = method, draws = chains * iter_sampling,
-                 predictors = c(a = ncol(parts$a$predictors), b = ncol(parts$b$predictors))),
+                 predictors = c(a = ncol(parts$a$predictors), b = ncol(parts$b$predictors)),
+                 seed = seed, backend = backend, models = per_model),
             class = "flatcor_bayes_factor")
 }
 

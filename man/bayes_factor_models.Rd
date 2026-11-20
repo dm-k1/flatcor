@@ -17,7 +17,8 @@ bayes_factor_models(
   method = "normal",
   backend = default_backend(),
   model = flatcor_model(backend),
-  density = if (backend == "cmdstanr") flatcor_density()
+  density = if (backend == "cmdstanr") flatcor_density(),
+  keep_fits = FALSE
 )
 }
 \arguments{
@@ -55,12 +56,34 @@ longer compute Bayes factors in that session. The validation
 \item{density}{With cmdstanr, the log density bridge sampling evaluates:
 \code{flatcor_density()} (needs the bridgestan package). Not used with
 rstan. See \code{flatcor_model()} for parallel processes.}
+
+\item{keep_fits}{Also return each model's Stan fit (with all draws, read
+into memory), bridge sampling's object and the data Stan got. Off by
+default: the fits hold every draw, too much to keep for many Bayes
+factors; the summaries below come out either way.}
 }
 \value{
-A \code{flatcor_bayes_factor}: \code{$bayes_factor} (model A
-against model B), \code{$log_bayes_factor}, \code{$error} (approximate
-SE of the log Bayes factor; \code{NA} for \code{"warp3"}), the two log
-marginal likelihoods and the divergent transitions of each fit.
+A \code{flatcor_bayes_factor}:
+\describe{
+\item{\code{$bayes_factor}, \code{$log_bayes_factor}}{Model A against
+model B.}
+\item{\code{$error}}{Approximate SE of the log Bayes factor, the two
+models' errors combined (\code{NA} for \code{"warp3"}).}
+\item{\code{$log_marginal_likelihoods}, \code{$divergent}}{Per model.}
+\item{\code{$models}}{Everything per model (\code{$a} and \code{$b}):
+the log marginal likelihood and its own error; bridge sampling's
+method, iterations and error measures; \code{$sampler}, the
+sampler's diagnostics per chain (divergent transitions, hits of the
+maximum tree depth, E-BFMI, step size, mean leapfrog steps, seconds
+of warmup and sampling); \code{$summary}, every Stan variable's
+mean, median, sd, mad, quantiles, R-hat and bulk and tail ESS;
+\code{$seconds} of sampling and of bridge sampling; the seed, the
+number of predictors and n. With \code{keep_fits = TRUE} also
+\code{$fit}, \code{$bridge_sampler} and \code{$stan_data}.}
+\item{\code{$seed}, \code{$prior}, \code{$method}, \code{$draws},
+\code{$predictors}, \code{$backend}}{The seed used (drawn when none
+was given), and the settings.}
+}
 }
 \description{
 Nested or not, as long as both have the same outcome. Each model is fitted

@@ -94,3 +94,66 @@ test_that("a seed, or set.seed() beforehand, makes the Bayes factor reproducible
   set.seed(7)
   expect_identical(bayes_factor_once(), first)
 })
+
+test_that("everything computed for a Bayes factor comes out, per model", {
+  skip_without_stan()
+  result <- bayes_factor_models(y ~ x1 + x2, y ~ x2, example_data, prior = "flat_r",
+                                chains = 2, iter_sampling = 2000, seed = 4)
+  expect_identical(result$seed, 4)
+  expect_identical(names(result$models), c("a", "b"))
+  for (name in c("a", "b")) {
+    model <- result$models[[name]]
+    expect_identical(model$log_marginal_likelihood, result$log_marginal_likelihoods[[name]])
+    expect_identical(model$divergent, result$divergent[[name]])
+    expect_identical(model$seed, if (name == "a") 4 else 5)
+    expect_identical(model$n, nrow(example_data))
+    expect_identical(model$bridge_sampling$method, "normal")
+    expect_gt(model$bridge_sampling$iterations, 0)
+    expect_identical(model$bridge_sampling$error_measures$cv, model$error)
+    expect_identical(nrow(model$sampler), 2L)
+    expect_true(all(c("divergent", "max_treedepth_hits", "ebfmi", "step_size",
+                      "mean_leapfrog_steps", "warmup_seconds", "sampling_seconds") %in%
+                      names(model$sampler)))
+    expect_identical(sum(model$sampler$divergent), model$divergent)
+    expect_true(all(c("alpha", "sigma", "R", "f", "R_squared", "lp__") %in%
+                      model$summary$variable))
+    expect_true(all(c("mean", "sd", "q2.5", "q97.5", "rhat", "ess_bulk", "ess_tail") %in%
+                      names(model$summary)))
+    expect_true(all(model$seconds > 0))
+    expect_null(model$fit)
+  }
+  expect_identical(result$models$a$predictors, 2L)
+  expect_identical(result$models$b$predictors, 1L)
+  expect_equal(result$error, sqrt(result$models$a$error^2 + result$models$b$error^2))
+})
+
+test_that("keep_fits adds the fits and bridge sampling's objects, and changes nothing else", {
+  skip_without_stan()
+  bayes_factor_with <- function(keep_fits) {
+    bayes_factor_models(y ~ x1 + x2, y ~ 1, example_data, prior = "flat_partial_r",
+                        chains = 2, iter_sampling = 2000, seed = 6, keep_fits = keep_fits)
+  }
+  without <- bayes_factor_with(FALSE)
+  with <- bayes_factor_with(TRUE)
+  expect_identical(with$log_bayes_factor, without$log_bayes_factor)
+  expect_identical(with$error, without$error)
+  expect_identical(with$models$a$summary, without$models$a$summary)
+  model <- with$models$a
+  expect_s3_class(model$bridge_sampler, "bridge")
+  expect_identical(model$bridge_sampler$logml, model$log_marginal_likelihood)
+  expect_identical(model$stan_data$K, 2L)
+  ## the fit's draws give the summary, also after the fit's CSV files are gone
+  unlink(model$fit$output_files())
+  expect_equal(summarise_stan_draws(model$fit$draws()), model$summary)
+  ## the intercept-only model has no predictor variables
+  expect_false(any(grepl("^b\\[", with$models$b$summary$variable)))
+})
+
+test_that("without a seed, the seed that comes out reproduces the Bayes factor", {
+  skip_without_stan()
+  first <- bayes_factor_models(y ~ x1 + x2, y ~ x2, example_data, prior = "flat_r",
+                               chains = 2, iter_sampling = 2000)
+  again <- bayes_factor_models(y ~ x1 + x2, y ~ x2, example_data, prior = "flat_r",
+                               chains = 2, iter_sampling = 2000, seed = first$seed)
+  expect_identical(again$log_bayes_factor, first$log_bayes_factor)
+})

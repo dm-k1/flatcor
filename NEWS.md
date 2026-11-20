@@ -4,6 +4,24 @@ One Stan model now does everything, for all three priors: the posterior, and
 the Bayes factor between two models. No Bayes factor is computed by a formula
 of the package's own any more.
 
+- Everything flatcor computes comes out; nothing that would be there without
+  its wrappers goes missing because of them (2.2).
+  - `bayes_factor_models()` returns `$models$a` and `$models$b`: each model's
+    log marginal likelihood and its own error, bridge sampling's method,
+    iterations and error measures, the sampler's diagnostics per chain
+    (divergent transitions, maximum tree depth hits, E-BFMI, step size, mean
+    leapfrog steps, seconds of warmup and sampling), a summary of every Stan
+    variable (mean, median, sd, mad, quantiles, R-hat, bulk and tail ESS),
+    the seconds of sampling and bridge sampling, the seed and n. The seed
+    used comes out as `$seed`, also when it was drawn. `keep_fits = TRUE`
+    adds the Stan fits (read into memory), bridge sampling's objects and the
+    data Stan got. The Bayes factor itself is unchanged.
+  - `fit_regression()` adds `$fit` (the backend's fit with every Stan
+    variable, such as R, f and the direction), `$sampler`, `$seconds`,
+    `$seed`, `$backend` and `$stan_data`.
+  - `draw_coefficients_from_prior()` attaches the drawn `R_squared`,
+    `f_squared` and `direction` to its matrix as attributes.
+
 - `bayes_factor_models(formula_a, formula_b, data)` takes the two models as
   formulas, like `fit_regression()`, instead of `lm()` fits: nothing was ever
   taken from an `lm()` fit but its predictors and outcome. Both models use
