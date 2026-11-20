@@ -16,7 +16,10 @@
 #' @param predictor_covariance Covariance matrix of the predictors.
 #' @param prior \code{"flat_partial_r"} (the default), \code{"flat_r"} or
 #'   \code{"flat_r_squared"}.
-#' @return A matrix with one coefficient set per row.
+#' @return A matrix with one coefficient set per row, with what each set was
+#'   drawn from as attributes: \code{"R_squared"} and \code{"f_squared"}
+#'   (one per row) and \code{"direction"} (the unscaled direction, a matrix
+#'   like the result).
 #' @examples
 #' draws <- draw_coefficients_from_prior(1000, diag(3), prior = "flat_partial_r")
 #' r_squared <- rowSums(draws^2) / (1 + rowSums(draws^2))   # ~ Beta(3/2, 1)
@@ -33,5 +36,7 @@ draw_coefficients_from_prior <- function(number_of_draws, predictor_covariance,
   # keep a matrix when k = 1
   directions <- matrix(directions, number_of_draws, number_of_predictors)
   f_squared_of_direction <- rowSums((directions %*% predictor_covariance) * directions)
-  sqrt(f_squared / f_squared_of_direction) * directions
+  coefficients <- sqrt(f_squared / f_squared_of_direction) * directions
+  structure(coefficients, R_squared = overall_correlation^2, f_squared = f_squared,
+            direction = directions)
 }

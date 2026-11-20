@@ -36,9 +36,20 @@ test_that("fit_regression() and bayes_factor_models() run with rstan", {
                           iter_warmup = 500, iter_sampling = 1000, seed = 1, backend = "rstan")
     bayes_factor <- bayes_factor_models(y ~ x1 + x2, y ~ 1, data, prior = "flat_partial_r",
                                         iter_sampling = 4000, seed = 5, backend = "rstan")
-    list(variables = posterior::variables(fit$draws), bayes_factor = bayes_factor)
+    list(variables = posterior::variables(fit$draws), sampler = fit$sampler,
+         stan_variables = posterior::variables(posterior::as_draws(as.array(fit$fit))),
+         bayes_factor = bayes_factor)
   }))
   expect_setequal(result$variables, c("Intercept", "x1", "x2", "sigma", "R_squared"))
+  ## the sampler's diagnostics and every Stan variable come out with rstan too
+  expect_identical(nrow(result$sampler), 2L)
+  expect_false(anyNA(result$sampler))
+  expect_true(all(c("alpha", "R", "f", "direction[1]") %in% result$stan_variables))
+  model_a <- result$bayes_factor$models$a
+  expect_identical(nrow(model_a$sampler), 4L)
+  expect_true(all(c("R", "rhat", "ess_tail") %in% c(model_a$summary$variable,
+                                                       names(model_a$summary))))
+  expect_gt(model_a$bridge_sampling$iterations, 0)
   r_squared <- sample_r_squared(data$y, cbind(data$x1, data$x2))
   reference <- log_bayes_factor_by_g_mixture(r_squared, 40, 2, prior_shape("flat_partial_r", 2))
   difference <- abs(result$bayes_factor$log_bayes_factor - reference)

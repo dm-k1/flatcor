@@ -64,3 +64,19 @@ test_that("the default is flat_partial_r, and an unknown prior is refused", {
   expect_error(draw_coefficients_from_prior(10, diag(2), prior = "uniform_correlations"),
                "Unknown prior")
 })
+
+test_that("the prior draws carry what each set was drawn from", {
+  set.seed(3)
+  covariance <- matrix(c(1, 0.4, 0.4, 1), 2)
+  draws <- draw_coefficients_from_prior(1000, covariance, prior = "flat_r_squared")
+  r_squared <- attr(draws, "R_squared")
+  f_squared <- attr(draws, "f_squared")
+  expect_length(r_squared, 1000)
+  expect_equal(f_squared, r_squared / (1 - r_squared))
+  ## each set's f^2 is the drawn amount, and its direction the drawn one
+  expect_equal(unname(rowSums((draws %*% covariance) * draws)), f_squared)
+  direction <- attr(draws, "direction")
+  coefficients <- matrix(c(draws), nrow(draws)) # without the attributes
+  expect_equal(coefficients / sqrt(rowSums(coefficients^2)),
+               direction / sqrt(rowSums(direction^2)))
+})
