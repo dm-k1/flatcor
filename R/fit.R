@@ -96,8 +96,8 @@ sampler_by_chain <- function(fit, backend) {
     by_chain <- split(as.data.frame(per_draw), per_draw$.chain)
     data.frame(
       chain = seq_along(by_chain),
-      divergent = summary$num_divergent,
-      max_treedepth_hits = summary$num_max_treedepth,
+      divergent = as.integer(summary$num_divergent),
+      max_treedepth_hits = as.integer(summary$num_max_treedepth),
       max_treedepth = fit$metadata()$max_treedepth,
       ebfmi = summary$ebfmi,
       step_size = vapply(by_chain, function(chain) chain$stepsize__[1], numeric(1)),
@@ -113,10 +113,12 @@ sampler_by_chain <- function(fit, backend) {
     times <- rstan::get_elapsed_time(fit)
     data.frame(
       chain = seq_along(per_chain),
-      divergent = vapply(per_chain, function(chain) sum(chain[, "divergent__"]), numeric(1)),
+      divergent = vapply(per_chain, function(chain) {
+        as.integer(sum(chain[, "divergent__"]))
+      }, integer(1)),
       max_treedepth_hits = vapply(per_chain, function(chain) {
         sum(chain[, "treedepth__"] >= max_treedepth)
-      }, numeric(1)),
+      }, integer(1)),
       max_treedepth = max_treedepth,
       ebfmi = unname(rstan::get_bfmi(fit)),
       step_size = vapply(per_chain, function(chain) chain[1, "stepsize__"], numeric(1)),
