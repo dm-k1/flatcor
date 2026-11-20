@@ -98,7 +98,7 @@ model_details <- function(sampled, bridged, backend, keep_fits) {
     n = sampled$stan_data$N
   )
   if (keep_fits) {
-    details$fit <- fit_in_memory(sampled$fit, backend)
+    details$fit <- sampled$fit
     details$bridge_sampler <- bridged$bridge
     details$stan_data <- sampled$stan_data
   }

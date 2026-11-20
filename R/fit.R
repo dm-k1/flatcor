@@ -59,16 +59,25 @@ sample_posterior <- function(predictors, outcome, prior, chains, iter_warmup, it
   stan_data <- stan_data_of(predictors, outcome, prior, per_observation)
   started <- proc.time()[["elapsed"]]
   if (backend == "cmdstanr") {
+    ## Each fit writes its CSV files to a folder of its own. cmdstanr names
+    ## the files from the minute and R's random numbers, so two fits after the
+    ## same set.seed() in one minute would share files, and cmdstanr deletes a
+    ## fit's files once that fit is garbage: the other fit's draws would be
+    ## gone. tempfile() does not use R's random numbers, so seeds and results
+    ## are unchanged.
+    output_folder <- tempfile("flatcor-fit-")
+    dir.create(output_folder)
     fit <- model$sample(data = stan_data, chains = chains, parallel_chains = chains,
                         iter_warmup = iter_warmup, iter_sampling = iter_sampling,
                         adapt_delta = adapt_delta, seed = seed, refresh = 0,
-                        show_messages = FALSE)
-    divergent <- sum(fit$diagnostic_summary(quiet = TRUE)$num_divergent)
+                        show_messages = FALSE, output_dir = output_folder)
+    fit <- fit_in_memory(fit, backend)
+    divergent <- as.integer(sum(fit$diagnostic_summary(quiet = TRUE)$num_divergent))
   } else {
     fit <- rstan::sampling(model, data = stan_data, chains = chains, cores = chains,
                            iter = iter_warmup + iter_sampling, warmup = iter_warmup,
                            control = list(adapt_delta = adapt_delta), seed = seed, refresh = 0)
-    divergent <- rstan::get_num_divergent(fit)
+    divergent <- as.integer(rstan::get_num_divergent(fit))
   }
   seconds <- proc.time()[["elapsed"]] - started
   if (divergent > 0) warning(divergent, " divergent transitions; check the fit.", call. = FALSE)
@@ -290,7 +299,7 @@ fit_regression <- function(formula, data, prior = "flat_partial_r", chains = 4, 
                  seed         = seed,
                  backend      = backend,
                  stan_data    = sampled$stan_data,
-                 fit          = fit_in_memory(sampled$fit, backend)),
+                 fit          = sampled$fit),
             class = "flatcor_fit")
 }
 
