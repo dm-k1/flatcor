@@ -29,3 +29,32 @@ test_that("fit_regression() runs and works with print, loo and pp_check", {
   }
   expect_error(fit_regression(y ~ x1 + x2, data, prior = "flat"), "Unknown prior")
 })
+
+test_that("cmdstanr fits leave no files in R's temporary folder, and keep working", {
+  skip_without_cmdstan()
+  set.seed(1)
+  data <- data.frame(x1 = rnorm(50), x2 = rnorm(50))
+  data$y <- 0.4 * data$x1 + rnorm(50)
+  model <- flatcor_model("cmdstanr")
+  ## per fit, cmdstanr writes CSV files (to flatcor's flatcor-fit-* folder)
+  ## and the data (standata-*.json); a long-running session filled its disk
+  left_over <- function() {
+    list.files(tempdir(), pattern = "^(flatcor-fit-|standata-)", all.files = TRUE)
+  }
+  before <- left_over()
+  fit_with_seed <- function(seed) {
+    fit_regression(y ~ x1 + x2, data, prior = "flat_r", chains = 2, iter_warmup = 300,
+                   iter_sampling = 300, seed = seed, backend = "cmdstanr", model = model)
+  }
+  fits <- lapply(c(1, 2, 1), fit_with_seed)
+  expect_identical(left_over(), before)
+  ## the draws and diagnostics are in memory; the same seed gives the same draws
+  expect_false(any(file.exists(fits[[1]]$fit$output_files())))
+  expect_identical(fits[[3]]$fit$draws(), fits[[1]]$fit$draws())
+  expect_identical(fits[[3]]$draws, fits[[1]]$draws)
+  expect_identical(fits[[3]]$sampler$divergent, fits[[1]]$sampler$divergent)
+  expect_false(identical(fits[[2]]$draws, fits[[1]]$draws))
+  expect_s3_class(fits[[1]]$fit$sampler_diagnostics(), "draws_array")
+  expect_equal(fits[[1]]$fit$metadata()$max_treedepth, 10)
+  expect_s3_class(loo(fits[[1]]), "loo")
+})

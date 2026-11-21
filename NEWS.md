@@ -21,6 +21,12 @@ of the package's own any more.
     `$seed`, `$backend` and `$stan_data`.
   - `draw_coefficients_from_prior()` attaches the drawn `R_squared`,
     `f_squared` and `direction` to its matrix as attributes.
+  - With cmdstanr, each fit's CSV files and data file are deleted once the
+    fit is read into memory; they used to stay in R's temporary folder until
+    the session ended, which filled the disk of long-running sessions. Draws
+    and results are unchanged. `$output_files()` now names files that are
+    gone, so `$cmdstan_diagnose()` and `$cmdstan_summary()` no longer work
+    on a flatcor fit.
 
 - `bayes_factor_models(formula_a, formula_b, data)` takes the two models as
   formulas, like `fit_regression()`, instead of `lm()` fits: nothing was ever
