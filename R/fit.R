@@ -65,12 +65,21 @@ sample_posterior <- function(predictors, outcome, prior, chains, iter_warmup, it
     ## fit's files once that fit is garbage: the other fit's draws would be
     ## gone. tempfile() does not use R's random numbers, so seeds and results
     ## are unchanged.
+    ## Once the fit is read into memory (fit_in_memory()) nothing reads its
+    ## files again, so the folder is deleted when this function ends, also
+    ## when sampling fails. cmdstanr leaves files in a folder it was given,
+    ## and a long-running R session (a validation worker) would otherwise
+    ## fill the disk with them.
     output_folder <- tempfile("flatcor-fit-")
     dir.create(output_folder)
+    on.exit(unlink(output_folder, recursive = TRUE), add = TRUE)
     fit <- model$sample(data = stan_data, chains = chains, parallel_chains = chains,
                         iter_warmup = iter_warmup, iter_sampling = iter_sampling,
                         adapt_delta = adapt_delta, seed = seed, refresh = 0,
                         show_messages = FALSE, output_dir = output_folder)
+    ## cmdstanr also wrote the data to a file of its own in R's temporary
+    ## folder (standata-*.json); flatcor keeps the data itself ($stan_data)
+    on.exit(unlink(fit$data_file()), add = TRUE)
     fit <- fit_in_memory(fit, backend)
     divergent <- as.integer(sum(fit$diagnostic_summary(quiet = TRUE)$num_divergent))
   } else {
@@ -152,9 +161,11 @@ summarise_stan_draws <- function(draws) {
   ))
 }
 
-## A cmdstanr fit reads its draws from CSV files in R's temporary folder,
-## which are gone once the R session ends. Read everything into the object,
-## so a saved fit keeps working (what cmdstanr's $save_object() does).
+## A cmdstanr fit reads its draws from CSV files, which sample_posterior()
+## deletes right after this. Read everything into the object, so the fit
+## keeps working, also when saved (what cmdstanr's $save_object() does).
+## What needs the files themselves no longer works: $output_files() names
+## files that are gone, and $cmdstan_diagnose() and $cmdstan_summary() fail.
 fit_in_memory <- function(fit, backend) {
   if (backend == "cmdstanr") {
     fit$draws()
