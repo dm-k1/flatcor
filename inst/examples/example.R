@@ -3,7 +3,7 @@
 ##  Estimation, then Bayes factors for model comparisons, with the three
 ##  priors side by side: flat_partial_r, flat_r and flat_r_squared. The
 ##  default is flat_partial_r; prior = selects the others (the validation:
-##  https://github.com/dm-k1/flatcor-validation). Everything runs on Stan.
+##  https://github.com/dm-k1/flatcor-simulation-studies). Everything runs on Stan.
 ## =====================================================================
 library(flatcor)   # install once: remotes::install_github("dm-k1/flatcor")
 

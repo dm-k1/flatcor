@@ -5,12 +5,12 @@
 ## The Stan model samples the prior in its own coordinates: R and a
 ## direction (uniform), with the coefficients computed from them. Sampling
 ## the coefficients directly misses the prior's peak at zero for larger k
-## (flatcor-validation, studies 1a and 2a). With no predictors it is the
+## (flatcor-simulation-studies, studies 1a and 2a). With no predictors it is the
 ## intercept-only model.
 
 ## The model itself is built by flatcor_model() and its log density by
 ## flatcor_density() (R/model.R). compile_stan_model() is kept for code that
-## called it before (flatcor-validation): the model for a backend. The model
+## called it before (flatcor-simulation-studies): the model for a backend. The model
 ## methods it used to add are no longer used; the Bayes factors take the log
 ## density from flatcor_density().
 compile_stan_model <- function(backend, model_methods = FALSE) flatcor_model(backend)
@@ -230,7 +230,7 @@ predictors_and_outcome <- function(formula, rows) {
 #'   or \code{"rstan"} (the default otherwise).
 #'   Use one backend per R session: once rstan is loaded, cmdstanr can no
 #'   longer compute Bayes factors in that session. The validation
-#'   (flatcor-validation) used cmdstanr.
+#'   (flatcor-simulation-studies) used cmdstanr.
 #' @param model The model to sample: \code{flatcor_model(backend)}, built once
 #'   and reused (see \code{flatcor_model()} for parallel processes).
 #' @param prior \code{"flat_partial_r"} (every correlation matrix equally

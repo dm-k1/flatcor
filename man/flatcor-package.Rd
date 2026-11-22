@@ -19,7 +19,7 @@ whatever the number of predictors (a = k/2).
 }
 The default is \code{"flat_partial_r"}; a function that uses it because no
 prior was given says so once per session. The validation of the three
-priors is at \url{https://github.com/dm-k1/flatcor-validation}. All three divide
+priors is at \url{https://github.com/dm-k1/flatcor-simulation-studies}. All three divide
 the total over the predictors with no preference:
 P(total) x P(this combination | total) x unit conversion.
 }

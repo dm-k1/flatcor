@@ -22,7 +22,7 @@ estimation, and the Bayes factor between any two linear models, from each
 model's marginal likelihood estimated by bridge sampling
 ([bridgesampling](https://cran.r-project.org/package=bridgesampling)). The
 default is flat partial r. The validation of the three priors side by side
-is in [dm-k1/flatcor-validation](https://github.com/dm-k1/flatcor-validation);
+is in [dm-k1/flatcor-simulation-studies](https://github.com/dm-k1/flatcor-simulation-studies);
 the argument for them, and the paper, in
 [dm-k1/Objective-bayes](https://github.com/dm-k1/Objective-bayes).
 

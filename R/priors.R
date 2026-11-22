@@ -20,7 +20,7 @@
 ## flat_partial_r and flat_r are both flat on r.
 ## The default is flat_partial_r. A function that uses it because no prior
 ## was given says so, once per session, so the choice stays visible. The
-## validation of the three priors: https://github.com/dm-k1/flatcor-validation.
+## validation of the three priors: https://github.com/dm-k1/flatcor-simulation-studies.
 
 prior_names   <- c("flat_partial_r", "flat_r", "flat_r_squared")
 default_prior <- "flat_partial_r"

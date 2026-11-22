@@ -11,6 +11,6 @@ exclusions: list(
     "tests/testthat" = list(object_usage_linter = Inf)
   )
 encoding: "UTF-8"
-# The same style as flatcor-validation's .lintr. Names may end in a capital
+# The same style as flatcor-simulation-studies's .lintr. Names may end in a capital
 # symbol (R_squared). The tests skip object_usage_linter: they use testthat's
 # functions (skip_on_cran(), expect_lt(), ...), which exist when tests run.
