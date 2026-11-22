@@ -4,6 +4,23 @@ One Stan model now does everything, for all three priors: the posterior, and
 the Bayes factor between two models. No Bayes factor is computed by a formula
 of the package's own any more.
 
+- The model and its log density are public and built once (2.1).
+  - `flatcor_model()` is the Stan model for sampling and `flatcor_density()`
+    is the model's log density for the Bayes factors. Both are built once and
+    kept as files in a cache folder (flatcor's user cache folder,
+    `options(flatcor.cache = )` or `cache =`, with a folder per flatcor
+    version), so every later R session or process finds them. A simulation
+    can build them before its workers start; a lock keeps simultaneous builds
+    apart. `fit_regression()` takes `model =`, and `bayes_factor_models()`
+    takes `model =` and `density =`; without them the functions build their
+    own. `compile_stan_model()` stays as a wrapper of `flatcor_model()`.
+  - With cmdstanr, bridge sampling takes the log density from BridgeStan (the
+    bridgestan R package, from r-multiverse; the first build also downloads
+    BridgeStan's C++ sources to `~/.bridgestan`) instead of cmdstanr's model
+    methods, which had to be built again in every R session (about 45 s).
+    With rstan, bridge sampling still takes the log density from rstan's fit.
+    The Bayes factors are identical to those from the model methods.
+  - `flatcor_stan_file()` and `flatcor_stan_data()` show what Stan is given.
 - Everything flatcor computes comes out; nothing that would be there without
   its wrappers goes missing because of them (2.2).
   - `bayes_factor_models()` returns `$models$a` and `$models$b`: each model's
@@ -29,8 +46,8 @@ of the package's own any more.
     on a flatcor fit.
 
 - `bayes_factor_models(formula_a, formula_b, data)` takes the two models as
-  formulas, like `fit_regression()`, instead of `lm()` fits: nothing was ever
-  taken from an `lm()` fit but its predictors and outcome. Both models use
+  formulas, like `fit_regression()`, instead of fitted model objects: nothing
+  was ever taken from those but the predictors and outcome. Both models use
   the rows with no missing value in any variable of either formula.
 - `seed` now makes a Bayes factor fully reproducible: it seeds Stan and also
   R's random numbers that bridge sampling uses. Without `seed`, the seed is
@@ -68,7 +85,7 @@ of the package's own any more.
   estimation, as the bridgesampling authors advise for testing); `seed`,
   `method = "warp3"` and the sampler settings can be set. It needs Stan
   (cmdstanr or rstan).
-- A model with no predictors (`lm(y ~ 1)`) is the intercept-only model: the
+- A model with no predictors (`y ~ 1`) is the intercept-only model: the
   Stan model now accepts K = 0.
 - The Stan model keeps every normalising constant (`target +=` throughout, the
   2a of R's density and the constant of the direction's density), as bridge
@@ -82,8 +99,9 @@ of the package's own any more.
 - The compiled Stan model is kept in a folder per flatcor version, so an
   executable from another version is never reused. Bayes factors need the
   model's log density as well, which cmdstanr can only provide in the R
-  session that compiled the model: that version is compiled once per session,
-  into the session's temporary folder.
+  session that compiled the model: that version was compiled once per session,
+  into the session's temporary folder. (From 2.1 on, BridgeStan provides the
+  log density instead; see above.)
 - The help pages and the package description no longer say that the
   validation recommends flat partial r: the validation is being redone, and
   the default stays flat partial r.
