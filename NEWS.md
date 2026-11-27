@@ -1,5 +1,7 @@
 # flatcor (development version, to be 3.0.0)
 
+- The priors are listed in the order independent_partial_r, joint_partial_r,
+  flat_r, flat_r_squared (prior_labels() and all documentation).
 - New `prior_labels()`: a readable label for each prior, named by the
   prior names, for tables and plot legends.
 - The prior `"flat_partial_r"` is renamed `"joint_partial_r"` (no alias:

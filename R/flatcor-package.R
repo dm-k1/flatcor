@@ -6,13 +6,13 @@
 #' \code{"independent_partial_r"} are R-squared ~ Beta(a, 1) with a uniform
 #' direction:
 #' \itemize{
+#'   \item \code{"independent_partial_r"}: each predictor's partial correlation
+#'     with the outcome gets its own flat prior on (-1, 1), not linked to the
+#'     others; R-squared is whatever they imply (not a Beta).
 #'   \item \code{"joint_partial_r"}: every correlation matrix of the outcome and
 #'     the predictors equally likely; each partial correlation flat on (-1, 1)
 #'     whatever the number of predictors (a = k/2). One joint prior, so the
 #'     partial correlations are linked.
-#'   \item \code{"independent_partial_r"}: each predictor's partial correlation
-#'     with the outcome gets its own flat prior on (-1, 1), not linked to the
-#'     others; R-squared is whatever they imply (not a Beta).
 #'   \item \code{"flat_r"}: the multiple correlation R flat for every k (a = 1/2).
 #'   \item \code{"flat_r_squared"}: R-squared flat for every k (a = 1).
 #' }

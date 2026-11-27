@@ -8,13 +8,13 @@ that extend Jeffreys' flat correlation to several predictors.
 
 With one predictor, the natural objective prior is flat on the correlation.
 With several, not every correlation-based quantity can be flat at once, so
-the package offers four priors. Three are one family, *R*² ~ Beta(*a*, 1) with a
-uniform direction; the fourth gives each partial correlation its own flat prior:
+the package offers four priors. One gives each partial correlation its own flat
+prior; the other three are one family, *R*² ~ Beta(*a*, 1) with a uniform direction:
 
 | `prior =`                    | *R*² prior    | Kept flat as predictors are added                          |
 | ------------------------------ | ---------------- | ---------------------------------------------------------- |
-| `"joint_partial_r"` (default) | Beta(*k*/2, 1) | each partial correlation (LKJ(1); `stan_lm` with η = 1) |
 | `"independent_partial_r"`  | whatever the partial correlations imply | each partial correlation, on its own (not linked to the others) |
+| `"joint_partial_r"` (default) | Beta(*k*/2, 1) | each partial correlation (LKJ(1); `stan_lm` with η = 1) |
 | `"flat_r"`                   | Beta(½, 1)      | the multiple correlation *R*                             |
 | `"flat_r_squared"`           | Beta(1, 1)       | *R*²                                                    |
 

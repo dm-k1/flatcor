@@ -28,8 +28,8 @@
 #'    draws are how to see it.
 #' @param number_of_draws Number of coefficient sets.
 #' @param predictor_covariance Covariance matrix of the predictors.
-#' @param prior \code{"joint_partial_r"} (the default),
-#'   \code{"independent_partial_r"}, \code{"flat_r"} or \code{"flat_r_squared"}.
+#' @param prior \code{"independent_partial_r"}, \code{"joint_partial_r"} (the
+#'   default), \code{"flat_r"} or \code{"flat_r_squared"}.
 #' @return A matrix with one coefficient set per row, with what each set was
 #'   drawn from as attributes: \code{"R_squared"} and \code{"f_squared"}
 #'   (one per row), \code{"direction"} (the unscaled direction, a matrix

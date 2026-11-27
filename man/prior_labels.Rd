@@ -8,8 +8,8 @@ prior_labels()
 }
 \value{
 A named character vector: the names are the values of the
-\code{prior} argument (\code{"joint_partial_r"},
-\code{"independent_partial_r"}, \code{"flat_r"},
+\code{prior} argument (\code{"independent_partial_r"},
+\code{"joint_partial_r"}, \code{"flat_r"},
 \code{"flat_r_squared"}), the values their labels.
 }
 \description{

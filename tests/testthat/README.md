@@ -5,7 +5,7 @@ the ones before it: first the priors, then their draws, then the Stan
 model, then fitting, then Bayes factors, and last the second backend
 (rstan).
 
-The four priors are `joint_partial_r` (the default), `independent_partial_r`,
+The four priors are `independent_partial_r`, `joint_partial_r` (the default),
 `flat_r` and `flat_r_squared`. The tables show which tests cover
 `independent_partial_r` specifically. The others are covered throughout.
 

@@ -22,12 +22,12 @@ fit_regression(
 
 \item{data}{A data frame.}
 
-\item{prior}{\code{"joint_partial_r"} (one prior over all valid correlation
-matrices, every one equally likely; each partial correlation is flat on
-its own but they are linked; R-squared ~ Beta(k/2, 1)),
-\code{"independent_partial_r"} (each predictor's partial correlation gets
-its own flat prior, not linked to the others; R-squared is whatever they
-imply), \code{"flat_r"} (R-squared ~ Beta(1/2, 1) for every k) or
+\item{prior}{\code{"independent_partial_r"} (each predictor's partial
+correlation gets its own flat prior, not linked to the others; R-squared
+is whatever they imply), \code{"joint_partial_r"} (one prior over all
+valid correlation matrices, every one equally likely; each partial
+correlation is flat on its own but they are linked; R-squared ~
+Beta(k/2, 1)), \code{"flat_r"} (R-squared ~ Beta(1/2, 1) for every k) or
 \code{"flat_r_squared"} (R-squared ~ Beta(1, 1) for every k). The default
 is \code{"joint_partial_r"}.}
 

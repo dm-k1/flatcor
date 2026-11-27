@@ -22,7 +22,7 @@ test_that("fit_regression() runs and works with print, loo and pp_check", {
   expect_s3_class(loo(fit), "loo")
   expect_s3_class(pp_check(fit), "ggplot")
   expect_error(fit_regression(y ~ 0 + x1, data, prior = "flat_r"), "intercept")
-  for (prior in c("joint_partial_r", "independent_partial_r", "flat_r_squared")) {
+  for (prior in c("independent_partial_r", "joint_partial_r", "flat_r_squared")) {
     other <- fit_regression(y ~ x1 + x2, data, chains = 2, iter_warmup = 500,
                             iter_sampling = 500, seed = 1, prior = prior)
     expect_output(print(other), paste(prior, "prior"))

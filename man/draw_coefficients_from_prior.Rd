@@ -15,8 +15,8 @@ draw_coefficients_from_prior(
 
 \item{predictor_covariance}{Covariance matrix of the predictors.}
 
-\item{prior}{\code{"joint_partial_r"} (the default),
-\code{"independent_partial_r"}, \code{"flat_r"} or \code{"flat_r_squared"}.}
+\item{prior}{\code{"independent_partial_r"}, \code{"joint_partial_r"} (the
+default), \code{"flat_r"} or \code{"flat_r_squared"}.}
 }
 \value{
 A matrix with one coefficient set per row, with what each set was
@@ -48,7 +48,8 @@ through the total:
 other predictors) flat on its own: rho_j ~ U(-1, 1).
 \item What each predictor has that the others don't: its residual SD given
 the others, s_j = 1 / sqrt(diag(solve(Sigma))).
-\item Turn each rho_j into its coefficient: b_j = rho_j / (s_j sqrt(1 - rho_j^2)).
+\item Turn each rho_j into its coefficient: b_j = rho_j / (s_j sqrt(1 - rho_j^2))
+(sigma = 1).
 \item What this implies for the total: f^2 = b' Sigma b, R^2 = f^2 / (1 + f^2).
 For k > 1 this R^2 has no closed form and depends on Sigma; these
 draws are how to see it.

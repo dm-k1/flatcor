@@ -1,5 +1,14 @@
-// One of four priors, sampled in its own coordinates. Three are
-// R^2 ~ Beta(a, 1) with a uniform direction:
+// One of four priors, sampled in its own coordinates. The first,
+// independent_partial_r, does not go through R at all: each
+// predictor's partial correlation with y (given the other predictors) gets
+// its own flat prior on (-1, 1), not linked to the others (data
+// independent_effects = 1). The sampler works with those partial
+// correlations directly, and the coefficients follow from them:
+//   b_j = sigma * rho_j / (s_j * sqrt(1 - rho_j^2)),  s_j = residual SD of x_j
+//                                                     given the other predictors
+// R and f are then what these coefficients imply.
+//
+// The other three are R^2 ~ Beta(a, 1) with a uniform direction:
 //   R          the overall correlation (factor 1): R^2 ~ Beta(a, 1), with
 //              a = K/2 (joint_partial_r: one prior over every valid correlation
 //              matrix of (y, x1 ... xK); each partial r is flat on its own,
@@ -9,15 +18,6 @@
 //   b = sigma * f * (direction expressed in predictor units),  f = R / sqrt(1 - R^2)
 // In these coordinates the prior has no peak at zero, so the sampler
 // reaches small effects for any number of predictors.
-//
-// The fourth, independent_partial_r, does not go through R at all: each
-// predictor's partial correlation with y (given the other predictors) gets
-// its own flat prior on (-1, 1), not linked to the others (data
-// independent_effects = 1). The sampler works with those partial
-// correlations directly, and the coefficients follow from them:
-//   b_j = sigma * rho_j / (s_j * sqrt(1 - rho_j^2)),  s_j = residual SD of x_j
-//                                                     given the other predictors
-// R and f are then what these coefficients imply.
 //
 // For the three R-squared ~ Beta(a, 1) priors the sampler works with the size of R,
 // R_magnitude in (0, 1). With several predictors the sign of each coefficient lives in the direction. With one
