@@ -32,7 +32,7 @@
 ## on r.
 ## The default is joint_partial_r. A function that uses it because no prior
 ## was given says so, once per session, so the choice stays visible. The
-## validation of the priors: https://github.com/dm-k1/flatcor-validation.
+## validation of the priors: https://github.com/dm-k1/flatcor-simulation-studies.
 
 prior_names   <- c("joint_partial_r", "independent_partial_r", "flat_r", "flat_r_squared")
 default_prior <- "joint_partial_r"

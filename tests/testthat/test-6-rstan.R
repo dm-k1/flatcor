@@ -1,6 +1,6 @@
 ## The rstan backend, checked mechanically: it runs, and its Bayes factor
 ## matches the independent reference (helper-references.R). The validation
-## (flatcor-validation) uses cmdstanr only.
+## (flatcor-simulation-studies) uses cmdstanr only.
 ##
 ## rstan runs in its own R process: once rstan is loaded, cmdstanr can no
 ## longer load a model's log density (both bring their own copy of the TBB

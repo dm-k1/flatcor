@@ -24,7 +24,7 @@ others; R-squared is whatever they imply (not a Beta).
 }
 The default is \code{"joint_partial_r"}; a function that uses it because no
 prior was given says so once per session. The validation of the
-priors is at \url{https://github.com/dm-k1/flatcor-validation}. The three
+priors is at \url{https://github.com/dm-k1/flatcor-simulation-studies}. The three
 R-squared ~ Beta(a, 1) priors divide the total over the predictors with no preference:
 P(total) x P(this combination | total) x unit conversion.
 }

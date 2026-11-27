@@ -23,7 +23,7 @@ estimation, and the Bayes factor between any two linear models, from each
 model's marginal likelihood estimated by bridge sampling
 ([bridgesampling](https://cran.r-project.org/package=bridgesampling)). The
 default is joint flat partial r. The validation of the priors side by side
-is in [dm-k1/flatcor-validation](https://github.com/dm-k1/flatcor-validation);
+is in [dm-k1/flatcor-simulation-studies](https://github.com/dm-k1/flatcor-simulation-studies);
 the argument for them, and the paper, in
 [dm-k1/Objective-bayes](https://github.com/dm-k1/Objective-bayes).
 
@@ -33,10 +33,21 @@ the argument for them, and the paper, in
 remotes::install_github("dm-k1/flatcor")
 ```
 
-Everything needs Stan, through [cmdstanr](https://mc-stan.org/cmdstanr/)
-(recommended; the validation used it) or rstan, which installs from CRAN
-without a separate CmdStan. Use one of the two per R session: once rstan is
-loaded, cmdstanr cannot compute Bayes factors in that session.
+Everything needs Stan. There are two backends:
+
+- [cmdstanr](https://mc-stan.org/cmdstanr/) with CmdStan installed (the
+  default whenever CmdStan is found; the validation used it). Its Bayes
+  factors take the model's log density from
+  [BridgeStan](https://roualdes.github.io/bridgestan/), so they also need the
+  bridgestan package:
+  `install.packages("bridgestan", repos = "https://r-multiverse.r-universe.dev")`.
+  The first build downloads BridgeStan's C++ sources to `~/.bridgestan`.
+- rstan (the fallback when CmdStan is not installed, or with
+  `backend = "rstan"`), which installs from CRAN without a separate CmdStan
+  and needs no BridgeStan.
+
+Use one of the two per R session: once rstan is loaded, cmdstanr cannot
+compute Bayes factors in that session.
 
 ## Use
 
@@ -54,6 +65,31 @@ Without `prior =` the functions use joint flat partial r and say so once per
 session. Rows with a missing value in a variable of the formula are left out,
 with a warning that gives the sample size used. A worked example on one
 dataset, start to finish: `system.file("examples", "example.R", package = "flatcor")`.
+
+## Results, builds and parallel work
+
+Nothing flatcor computes is thrown away. `fit_regression()` returns, besides
+the draws, the backend's fit, the sampler's diagnostics per chain, the
+seconds, the seed and the data Stan got. `bayes_factor_models()` returns the
+Bayes factor, its log and error, and per model (`$models$a`, `$models$b`) the
+log marginal likelihood, bridge sampling's details, the sampler's diagnostics
+and a summary of every Stan variable; `keep_fits = TRUE` also keeps the Stan
+fits. See the help pages for the full lists.
+
+The Stan model (`flatcor_model()`) and its log density (`flatcor_density()`)
+are built once and kept as files in a cache folder, one per flatcor version
+(`options(flatcor.cache = )` or `cache =` chooses it), so every later R
+session or process finds them. For parallel workers, build both first and let
+the workers share the cache:
+
+```r
+options(flatcor.cache = "path/to/cache")
+flatcor_model()
+flatcor_density()   # cmdstanr only
+```
+
+With cmdstanr, each fit's temporary files are deleted once it is read into
+memory.
 
 ## Tests
 

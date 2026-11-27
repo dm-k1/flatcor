@@ -37,7 +37,7 @@ is \code{"joint_partial_r"}.}
 or \code{"rstan"} (the default otherwise).
 Use one backend per R session: once rstan is loaded, cmdstanr can no
 longer compute Bayes factors in that session. The validation
-(flatcor-validation) used cmdstanr.}
+(flatcor-simulation-studies) used cmdstanr.}
 
 \item{model}{The model to sample: \code{flatcor_model(backend)}, built once
 and reused (see \code{flatcor_model()} for parallel processes).}

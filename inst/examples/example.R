@@ -4,7 +4,7 @@
 ##  priors side by side: joint_partial_r, independent_partial_r, flat_r and
 ##  flat_r_squared. The
 ##  default is joint_partial_r; prior = selects the others (the validation:
-##  https://github.com/dm-k1/flatcor-validation). Everything runs on Stan.
+##  https://github.com/dm-k1/flatcor-simulation-studies). Everything runs on Stan.
 ## =====================================================================
 library(flatcor)   # install once: remotes::install_github("dm-k1/flatcor")
 
