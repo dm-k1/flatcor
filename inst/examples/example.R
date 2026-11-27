@@ -33,9 +33,10 @@ bayesplot::mcmc_trace(full_model$draws)   # trace plots (any bayesplot plot work
 ## The four priors side by side: at n = 60 with three predictors each prior
 ## pulls the estimates toward zero, by a different amount
 priors <- c("joint_partial_r", "independent_partial_r", "flat_r", "flat_r_squared")
-other_fits <- lapply(c(independent_partial_r = "independent_partial_r",
-                       flat_r = "flat_r",
-                       flat_r_squared = "flat_r_squared"), function(prior) {
+other_priors <- c(independent_partial_r = "independent_partial_r",
+                  flat_r = "flat_r",
+                  flat_r_squared = "flat_r_squared")
+other_fits <- lapply(other_priors, function(prior) {
   fit_regression(y ~ x1 + x2 + x3, data = my_data, prior = prior, chains = 4,
                  iter_warmup = 1000, iter_sampling = 1000, seed = 1)
 })
