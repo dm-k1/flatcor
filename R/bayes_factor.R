@@ -1,5 +1,5 @@
 ## =====================================================================
-##  The Bayes factor between two models, for the three priors
+##  The Bayes factor between two models, for the four priors
 ## =====================================================================
 ## Each model gets the Stan model (R/fit.R, inst/stan/flatcor.stan) with the
 ## chosen prior; its marginal likelihood is estimated from the posterior
@@ -140,7 +140,8 @@ stan_variable_names <- function(bridgestan_names) {
 #' bridgesampling authors recommend where it is affordable. Their largest
 #' worked example has 96 parameters (Gronau et al., 2017); a model here has
 #' k + 3 (k predictor columns: the intercept, the noise, R and a direction of
-#' k numbers), so up to about 90 predictors stays within what has been shown.
+#' k numbers; with \code{"independent_partial_r"} k + 2: the intercept, the
+#' noise and k partial correlations), so up to about 90 predictors stays within what has been shown.
 #' @param formula_a,formula_b The two models, as formulas with an intercept
 #'   and the same outcome, such as \code{y ~ x1 + x2} and \code{y ~ x2}.
 #' @inheritParams fit_regression
@@ -187,11 +188,11 @@ stan_variable_names <- function(bridgestan_names) {
 #' # needs CmdStan (cmdstanr::install_cmdstan())
 #' if (requireNamespace("cmdstanr", quietly = TRUE) &&
 #'     !is.null(cmdstanr::cmdstan_version(error_on_NA = FALSE))) {
-#'   bayes_factor_models(mpg ~ wt + hp, mpg ~ wt, mtcars, prior = "flat_partial_r", seed = 1)
+#'   bayes_factor_models(mpg ~ wt + hp, mpg ~ wt, mtcars, prior = "joint_partial_r", seed = 1)
 #'   bayes_factor_models(mpg ~ wt + hp, mpg ~ 1, mtcars, prior = "flat_r", seed = 1)
 #' }
 #' @export
-bayes_factor_models <- function(formula_a, formula_b, data, prior = "flat_partial_r", chains = 4,
+bayes_factor_models <- function(formula_a, formula_b, data, prior = "joint_partial_r", chains = 4,
                                 iter_warmup = 1000, iter_sampling = 10000, adapt_delta = 0.95,
                                 seed = NULL, method = "normal", backend = default_backend(),
                                 model = flatcor_model(backend),

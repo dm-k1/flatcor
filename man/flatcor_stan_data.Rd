@@ -7,7 +7,7 @@
 flatcor_stan_data(
   formula,
   data,
-  prior = "flat_partial_r",
+  prior = "joint_partial_r",
   per_observation = FALSE
 )
 }
@@ -16,10 +16,14 @@ flatcor_stan_data(
 
 \item{data}{A data frame.}
 
-\item{prior}{\code{"flat_partial_r"} (every correlation matrix equally
-likely, R-squared ~ Beta(k/2, 1)), \code{"flat_r"} (R-squared ~
-Beta(1/2, 1) for every k) or \code{"flat_r_squared"} (R-squared ~
-Beta(1, 1) for every k). The default is \code{"flat_partial_r"}.}
+\item{prior}{\code{"joint_partial_r"} (one prior over all valid correlation
+matrices, every one equally likely; each partial correlation is flat on
+its own but they are linked; R-squared ~ Beta(k/2, 1)),
+\code{"independent_partial_r"} (each predictor's partial correlation gets
+its own flat prior, not linked to the others; R-squared is whatever they
+imply), \code{"flat_r"} (R-squared ~ Beta(1/2, 1) for every k) or
+\code{"flat_r_squared"} (R-squared ~ Beta(1, 1) for every k). The default
+is \code{"joint_partial_r"}.}
 
 \item{per_observation}{Also ask for the log likelihood and predicted
 outcome of each observation (as \code{fit_regression()} does, for
@@ -32,7 +36,8 @@ A list, the data block of \code{flatcor.stan}.
 What \code{fit_regression()} and \code{bayes_factor_models()} give the Stan
 program (\code{flatcor_stan_file()}) for one formula: the rows with no
 missing value, the predictor columns (without the intercept), the outcome
-and the prior's shape.
+and the prior (its Beta shape, or the flag for independent partial
+correlations).
 }
 \examples{
 str(flatcor_stan_data(mpg ~ wt + hp, mtcars, prior = "flat_r"))

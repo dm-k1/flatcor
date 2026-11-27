@@ -217,10 +217,11 @@ predictors_and_outcome <- function(formula, rows) {
   )
 }
 
-#' Fit a linear regression with one of the three priors
+#' Fit a linear regression with one of the four priors
 #'
 #' Samples the prior in its own coordinates, the overall correlation R
-#' and a direction (uniform), with the coefficients computed from them
+#' and a direction (uniform), with the coefficients computed from them; for
+#' \code{"independent_partial_r"} the partial correlations
 #' (\code{inst/stan/flatcor.stan}). Intercept flat, noise level \eqn{1/\sigma}.
 #'
 #' @param formula A model formula with an intercept and at least one predictor.
@@ -233,10 +234,14 @@ predictors_and_outcome <- function(formula, rows) {
 #'   (flatcor-validation) used cmdstanr.
 #' @param model The model to sample: \code{flatcor_model(backend)}, built once
 #'   and reused (see \code{flatcor_model()} for parallel processes).
-#' @param prior \code{"flat_partial_r"} (every correlation matrix equally
-#'   likely, R-squared ~ Beta(k/2, 1)), \code{"flat_r"} (R-squared ~
-#'   Beta(1/2, 1) for every k) or \code{"flat_r_squared"} (R-squared ~
-#'   Beta(1, 1) for every k). The default is \code{"flat_partial_r"}.
+#' @param prior \code{"joint_partial_r"} (one prior over all valid correlation
+#'   matrices, every one equally likely; each partial correlation is flat on
+#'   its own but they are linked; R-squared ~ Beta(k/2, 1)),
+#'   \code{"independent_partial_r"} (each predictor's partial correlation gets
+#'   its own flat prior, not linked to the others; R-squared is whatever they
+#'   imply), \code{"flat_r"} (R-squared ~ Beta(1/2, 1) for every k) or
+#'   \code{"flat_r_squared"} (R-squared ~ Beta(1, 1) for every k). The default
+#'   is \code{"joint_partial_r"}.
 #' @return A \code{flatcor_fit}: \code{print()} shows estimates and diagnostics,
 #'   \code{loo()} and \code{pp_check()} work as usual. It holds:
 #'   \describe{
@@ -263,12 +268,12 @@ predictors_and_outcome <- function(formula, rows) {
 #' # needs CmdStan (cmdstanr::install_cmdstan())
 #' if (requireNamespace("cmdstanr", quietly = TRUE) &&
 #'     !is.null(cmdstanr::cmdstan_version(error_on_NA = FALSE))) {
-#'   fit <- fit_regression(mpg ~ wt + hp, mtcars, prior = "flat_partial_r")
+#'   fit <- fit_regression(mpg ~ wt + hp, mtcars, prior = "joint_partial_r")
 #'   fit
 #'   loo(fit)
 #' }
 #' @export
-fit_regression <- function(formula, data, prior = "flat_partial_r", chains = 4, iter_warmup = 1000,
+fit_regression <- function(formula, data, prior = "joint_partial_r", chains = 4, iter_warmup = 1000,
                            iter_sampling = 1000, adapt_delta = 0.95, seed = NULL,
                            backend = default_backend(), model = flatcor_model(backend)) {
   prior <- check_prior(prior, defaulted = missing(prior))
@@ -326,8 +331,12 @@ print.flatcor_fit <- function(x, digits = 3, ...) {
     rhat = posterior::rhat, ess_bulk = posterior::ess_bulk
   )
   print(as.data.frame(estimates), digits = digits, row.names = FALSE)
-  cat("\nR_squared is the population explained share; its prior is",
-      sprintf("Beta(%g, 1).\n", prior_shape(x$prior, ncol(x$predictors))))
+  cat("\nR_squared is the population explained share; its prior is ")
+  if (prior_is_independent(x$prior)) {
+    cat("whatever the independent flat partial correlations imply.\n")
+  } else {
+    cat(sprintf("Beta(%g, 1).\n", prior_shape(x$prior, ncol(x$predictors))))
+  }
   invisible(x)
 }
 
@@ -344,7 +353,7 @@ print.flatcor_fit <- function(x, digits = 3, ...) {
 #' # needs CmdStan (cmdstanr::install_cmdstan())
 #' if (requireNamespace("cmdstanr", quietly = TRUE) &&
 #'     !is.null(cmdstanr::cmdstan_version(error_on_NA = FALSE))) {
-#'   fit <- fit_regression(mpg ~ wt + hp, mtcars, prior = "flat_partial_r", seed = 1)
+#'   fit <- fit_regression(mpg ~ wt + hp, mtcars, prior = "joint_partial_r", seed = 1)
 #'   loo(fit)
 #' }
 #' @exportS3Method loo::loo
@@ -362,7 +371,7 @@ loo.flatcor_fit <- function(x, cores = 1, ...) {
 #' # needs CmdStan (cmdstanr::install_cmdstan())
 #' if (requireNamespace("cmdstanr", quietly = TRUE) &&
 #'     !is.null(cmdstanr::cmdstan_version(error_on_NA = FALSE))) {
-#'   fit <- fit_regression(mpg ~ wt + hp, mtcars, prior = "flat_partial_r", seed = 1)
+#'   fit <- fit_regression(mpg ~ wt + hp, mtcars, prior = "joint_partial_r", seed = 1)
 #'   pp_check(fit)
 #' }
 #' @exportS3Method bayesplot::pp_check

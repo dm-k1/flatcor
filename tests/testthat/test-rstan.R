@@ -34,7 +34,7 @@ test_that("fit_regression() and bayes_factor_models() run with rstan", {
     data <- .(data)
     fit <- fit_regression(y ~ x1 + x2, data, prior = "flat_r", chains = 2,
                           iter_warmup = 500, iter_sampling = 1000, seed = 1, backend = "rstan")
-    bayes_factor <- bayes_factor_models(y ~ x1 + x2, y ~ 1, data, prior = "flat_partial_r",
+    bayes_factor <- bayes_factor_models(y ~ x1 + x2, y ~ 1, data, prior = "joint_partial_r",
                                         iter_sampling = 4000, seed = 5, backend = "rstan")
     list(variables = posterior::variables(fit$draws), sampler = fit$sampler,
          stan_variables = posterior::variables(posterior::as_draws(as.array(fit$fit))),
@@ -51,7 +51,7 @@ test_that("fit_regression() and bayes_factor_models() run with rstan", {
                                                        names(model_a$summary))))
   expect_gt(model_a$bridge_sampling$iterations, 0)
   r_squared <- sample_r_squared(data$y, cbind(data$x1, data$x2))
-  reference <- log_bayes_factor_by_g_mixture(r_squared, 40, 2, prior_shape("flat_partial_r", 2))
+  reference <- log_bayes_factor_by_g_mixture(r_squared, 40, 2, prior_shape("joint_partial_r", 2))
   difference <- abs(result$bayes_factor$log_bayes_factor - reference)
   expect_lt(difference, max(5 * result$bayes_factor$error, 0.02))
 })

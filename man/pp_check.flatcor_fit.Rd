@@ -24,7 +24,7 @@ Posterior predictive check for a flatcor fit
 # needs CmdStan (cmdstanr::install_cmdstan())
 if (requireNamespace("cmdstanr", quietly = TRUE) &&
     !is.null(cmdstanr::cmdstan_version(error_on_NA = FALSE))) {
-  fit <- fit_regression(mpg ~ wt + hp, mtcars, prior = "flat_partial_r", seed = 1)
+  fit <- fit_regression(mpg ~ wt + hp, mtcars, prior = "joint_partial_r", seed = 1)
   pp_check(fit)
 }
 }

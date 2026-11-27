@@ -1,8 +1,8 @@
 ## =====================================================================
 ##  Example: flatcor on one dataset, start to finish
 ##  Estimation, then Bayes factors for model comparisons, with the three
-##  priors side by side: flat_partial_r, flat_r and flat_r_squared. The
-##  default is flat_partial_r; prior = selects the others (the validation:
+##  priors side by side: joint_partial_r, flat_r and flat_r_squared. The
+##  default is joint_partial_r; prior = selects the others (the validation:
 ##  https://github.com/dm-k1/flatcor-validation). Everything runs on Stan.
 ## =====================================================================
 library(flatcor)   # install once: remotes::install_github("dm-k1/flatcor")
@@ -22,7 +22,7 @@ my_data$y  <- 0.3 * my_data$x1 + 0.2 * my_data$x2 + rnorm(sample_size)
 my_data$x4 <- rnorm(sample_size)
 
 ## ---- 2. Estimation ---------------------------------------------------
-full_model <- fit_regression(y ~ x1 + x2 + x3, data = my_data, prior = "flat_partial_r",
+full_model <- fit_regression(y ~ x1 + x2 + x3, data = my_data, prior = "joint_partial_r",
                              chains = 4, iter_warmup = 1000, iter_sampling = 1000, seed = 1)
 full_model                       # estimates, intervals, Rhat, ESS, divergences
 loo(full_model)                  # leave-one-out cross-validation
@@ -31,13 +31,13 @@ bayesplot::mcmc_trace(full_model$draws)   # trace plots (any bayesplot plot work
 
 ## The three priors side by side: at n = 60 with three predictors each prior
 ## pulls the estimates toward zero, by a different amount
-priors <- c("flat_partial_r", "flat_r", "flat_r_squared")
+priors <- c("joint_partial_r", "flat_r", "flat_r_squared")
 other_fits <- lapply(c(flat_r = "flat_r", flat_r_squared = "flat_r_squared"), function(prior) {
   fit_regression(y ~ x1 + x2 + x3, data = my_data, prior = prior, chains = 4,
                  iter_warmup = 1000, iter_sampling = 1000, seed = 1)
 })
 posterior_means <- function(fit) colMeans(as.data.frame(fit$draws)[, c("x1", "x2", "x3")])
-cbind(flat_partial_r = posterior_means(full_model),
+cbind(joint_partial_r = posterior_means(full_model),
       flat_r         = posterior_means(other_fits$flat_r),
       flat_r_squared = posterior_means(other_fits$flat_r_squared))
 
@@ -47,11 +47,11 @@ cbind(flat_partial_r = posterior_means(full_model),
 ## factor comes with a Monte Carlo error
 full <- y ~ x1 + x2 + x3
 # evidence for x1
-bayes_factor_models(full, y ~ x2 + x3, my_data, prior = "flat_partial_r", seed = 1)
+bayes_factor_models(full, y ~ x2 + x3, my_data, prior = "joint_partial_r", seed = 1)
 # non-nested
-bayes_factor_models(full, y ~ x4, my_data, prior = "flat_partial_r", seed = 1)
+bayes_factor_models(full, y ~ x4, my_data, prior = "joint_partial_r", seed = 1)
 # against the intercept-only model
-bayes_factor_models(full, y ~ 1, my_data, prior = "flat_partial_r", seed = 1)
+bayes_factor_models(full, y ~ 1, my_data, prior = "joint_partial_r", seed = 1)
 
 ## Evidence for each predictor under each prior: the model with it against
 ## the model without it
@@ -65,7 +65,8 @@ priors_by_predictor   # BF10 per predictor (rows) and prior (columns)
 
 ## The Monte Carlo error directly: the same Bayes factor with other seeds
 sapply(1:5, function(seed) {
-  result <- bayes_factor_models(full, without("x1"), my_data, prior = "flat_partial_r", seed = seed)
+  result <- bayes_factor_models(full, without("x1"), my_data, prior = "joint_partial_r",
+                                seed = seed)
   result$log_bayes_factor
 })
 

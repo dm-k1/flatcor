@@ -36,7 +36,7 @@ log_integral_around_peak <- function(log_integrand, lower, upper) {
 }
 
 ## R-squared ~ Beta(a, 1) as a g-mixture: g/n = t = B W, W ~ Inverse-Gamma(1, 1/2),
-## B ~ Beta(a, k/2 - a), or B = 1 when a = k/2 (flat partial r); so
+## B ~ Beta(a, k/2 - a), or B = 1 when a = k/2 (joint flat partial r); so
 ## p(t) = E[B exp(-B / (2t))] / (2 t^2)
 log_density_g_over_n <- function(t, k, a) {
   if (isTRUE(all.equal(a, k / 2))) return(-log(2) - 2 * log(t) - 1 / (2 * t))

@@ -2,12 +2,12 @@
 % Please edit documentation in R/prior_draws.R
 \name{draw_coefficients_from_prior}
 \alias{draw_coefficients_from_prior}
-\title{Draw coefficient sets from one of the three priors}
+\title{Draw coefficient sets from one of the four priors}
 \usage{
 draw_coefficients_from_prior(
   number_of_draws,
   predictor_covariance,
-  prior = "flat_partial_r"
+  prior = "joint_partial_r"
 )
 }
 \arguments{
@@ -15,28 +15,46 @@ draw_coefficients_from_prior(
 
 \item{predictor_covariance}{Covariance matrix of the predictors.}
 
-\item{prior}{\code{"flat_partial_r"} (the default), \code{"flat_r"} or
-\code{"flat_r_squared"}.}
+\item{prior}{\code{"joint_partial_r"} (the default),
+\code{"independent_partial_r"}, \code{"flat_r"} or \code{"flat_r_squared"}.}
 }
 \value{
 A matrix with one coefficient set per row, with what each set was
 drawn from as attributes: \code{"R_squared"} and \code{"f_squared"}
-(one per row) and \code{"direction"} (the unscaled direction, a matrix
-like the result).
+(one per row), \code{"direction"} (the unscaled direction, a matrix
+like the result; for \code{"independent_partial_r"} the coefficients
+themselves) and \code{"partial_r"} (each coefficient's partial
+correlation with the outcome, a matrix like the result).
 }
 \description{
-The prior as a recipe, in units of the noise (sigma = 1):
+The prior as a recipe, in units of the noise (sigma = 1). The three
+R-squared ~ Beta(a, 1) priors (\code{"joint_partial_r"}, \code{"flat_r"} and
+\code{"flat_r_squared"}) share one recipe:
 \enumerate{
 \item P(total): draw the overall correlation R; Cohen's f^2 = R^2 / (1 - R^2).
 R^2 ~ Beta(a, 1), i.e. R = U^(1/(2a)) with U flat: a = k/2 for
-\code{"flat_partial_r"}, 1/2 for \code{"flat_r"} (R flat) and 1 for
+\code{"joint_partial_r"}, 1/2 for \code{"flat_r"} (R flat) and 1 for
 \code{"flat_r_squared"} (R^2 flat).
 \item P(combination | total): draw a direction with no preference in explained
 variance (normal draws with covariance solve(Sigma)).
 \item Scale each direction so its f^2 is exactly the drawn amount.
 }
 }
+\details{
+\code{"independent_partial_r"} has its own recipe, which does not go
+through the total:
+\enumerate{
+\item Draw each effect's partial correlation (with the outcome, given the
+other predictors) flat on its own: rho_j ~ U(-1, 1).
+\item What each predictor has that the others don't: its residual SD given
+the others, s_j = 1 / sqrt(diag(solve(Sigma))).
+\item Turn each rho_j into its coefficient: b_j = rho_j / (s_j sqrt(1 - rho_j^2)).
+\item What this implies for the total: f^2 = b' Sigma b, R^2 = f^2 / (1 + f^2).
+For k > 1 this R^2 has no closed form and depends on Sigma; these
+draws are how to see it.
+}
+}
 \examples{
-draws <- draw_coefficients_from_prior(1000, diag(3), prior = "flat_partial_r")
+draws <- draw_coefficients_from_prior(1000, diag(3), prior = "joint_partial_r")
 r_squared <- rowSums(draws^2) / (1 + rowSums(draws^2))   # ~ Beta(3/2, 1)
 }

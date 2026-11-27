@@ -8,7 +8,7 @@ bayes_factor_models(
   formula_a,
   formula_b,
   data,
-  prior = "flat_partial_r",
+  prior = "joint_partial_r",
   chains = 4,
   iter_warmup = 1000,
   iter_sampling = 10000,
@@ -27,10 +27,14 @@ and the same outcome, such as \code{y ~ x1 + x2} and \code{y ~ x2}.}
 
 \item{data}{A data frame.}
 
-\item{prior}{\code{"flat_partial_r"} (every correlation matrix equally
-likely, R-squared ~ Beta(k/2, 1)), \code{"flat_r"} (R-squared ~
-Beta(1/2, 1) for every k) or \code{"flat_r_squared"} (R-squared ~
-Beta(1, 1) for every k). The default is \code{"flat_partial_r"}.}
+\item{prior}{\code{"joint_partial_r"} (one prior over all valid correlation
+matrices, every one equally likely; each partial correlation is flat on
+its own but they are linked; R-squared ~ Beta(k/2, 1)),
+\code{"independent_partial_r"} (each predictor's partial correlation gets
+its own flat prior, not linked to the others; R-squared is whatever they
+imply), \code{"flat_r"} (R-squared ~ Beta(1/2, 1) for every k) or
+\code{"flat_r_squared"} (R-squared ~ Beta(1, 1) for every k). The default
+is \code{"joint_partial_r"}.}
 
 \item{chains, iter_warmup, iter_sampling, adapt_delta}{Sampler settings for
 each model (the default draws are ten times those for estimation).}
@@ -102,13 +106,14 @@ run the function again with other seeds and look at the spread, which the
 bridgesampling authors recommend where it is affordable. Their largest
 worked example has 96 parameters (Gronau et al., 2017); a model here has
 k + 3 (k predictor columns: the intercept, the noise, R and a direction of
-k numbers), so up to about 90 predictors stays within what has been shown.
+k numbers; with \code{"independent_partial_r"} k + 2: the intercept, the
+noise and k partial correlations), so up to about 90 predictors stays within what has been shown.
 }
 \examples{
 # needs CmdStan (cmdstanr::install_cmdstan())
 if (requireNamespace("cmdstanr", quietly = TRUE) &&
     !is.null(cmdstanr::cmdstan_version(error_on_NA = FALSE))) {
-  bayes_factor_models(mpg ~ wt + hp, mpg ~ wt, mtcars, prior = "flat_partial_r", seed = 1)
+  bayes_factor_models(mpg ~ wt + hp, mpg ~ wt, mtcars, prior = "joint_partial_r", seed = 1)
   bayes_factor_models(mpg ~ wt + hp, mpg ~ 1, mtcars, prior = "flat_r", seed = 1)
 }
 }

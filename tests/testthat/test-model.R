@@ -21,6 +21,11 @@ test_that("the Stan program and its data are what the functions give Stan", {
   expect_identical(stan_data, stan_data_of(parts$predictors, parts$outcome, "flat_r_squared"))
   expect_identical(stan_data$K, 2L)
   expect_identical(stan_data$r_squared_shape, 1)
+  expect_identical(stan_data$independent_effects, 0L)
+  ## independent_partial_r has no Beta shape: Stan gets a dummy and the flag
+  independent_data <- flatcor_stan_data(y ~ x1 + x2, model_data, prior = "independent_partial_r")
+  expect_identical(independent_data$independent_effects, 1L)
+  expect_identical(independent_data$r_squared_shape, 1)
   expect_identical(flatcor_stan_data(y ~ x1, model_data, prior = "flat_r", TRUE)$per_observation, 1L)
   expect_error(flatcor_stan_data(y ~ x1, model_data, prior = "flat"), "Unknown prior")
 })
@@ -83,7 +88,7 @@ test_that("the Bayes factor from BridgeStan equals the one from model methods", 
     quiet = TRUE
   )
   pairs <- list(
-    list(formulas = list(y ~ x1 + x2, y ~ x2), prior = "flat_partial_r"),
+    list(formulas = list(y ~ x1 + x2, y ~ x2), prior = "joint_partial_r"),
     list(formulas = list(y ~ x1 + x2, y ~ 1), prior = "flat_r"),
     list(formulas = list(y ~ x1 + x2 + x3, y ~ x2 + x3), prior = "flat_r_squared")
   )

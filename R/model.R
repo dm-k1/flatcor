@@ -48,8 +48,9 @@ with_build_lock <- function(folder, code) {
 
 #' The Stan program flatcor uses
 #'
-#' The path of \code{flatcor.stan}: one Stan program for the three priors (the
-#' prior's shape is data), the posterior and the intercept-only model.
+#' The path of \code{flatcor.stan}: one Stan program for the four priors (the
+#' prior's shape, or the flag for independent partial correlations, is data),
+#' the posterior and the intercept-only model.
 #' @return The path of the file.
 #' @examples
 #' cat(readLines(flatcor_stan_file()), sep = "\n")
@@ -62,6 +63,7 @@ flatcor_stan_file <- function() {
 ## columns) and outcome. per_observation: also draw log_lik and y_rep (for loo
 ## and pp_check; a Bayes factor does not need them).
 stan_data_of <- function(predictors, outcome, prior, per_observation = FALSE) {
+  independent <- prior_is_independent(prior)
   list(
     N = length(outcome),
     K = ncol(predictors),
@@ -70,7 +72,9 @@ stan_data_of <- function(predictors, outcome, prior, per_observation = FALSE) {
     prior_only = 0L,
     proper_stand_ins = 0L,
     per_observation = as.integer(per_observation),
-    r_squared_shape = prior_shape(prior, ncol(predictors))
+    # independent_partial_r has no Beta shape; Stan gets a dummy it ignores
+    r_squared_shape = if (independent) 1 else prior_shape(prior, ncol(predictors)),
+    independent_effects = as.integer(independent)
   )
 }
 
@@ -79,7 +83,8 @@ stan_data_of <- function(predictors, outcome, prior, per_observation = FALSE) {
 #' What \code{fit_regression()} and \code{bayes_factor_models()} give the Stan
 #' program (\code{flatcor_stan_file()}) for one formula: the rows with no
 #' missing value, the predictor columns (without the intercept), the outcome
-#' and the prior's shape.
+#' and the prior (its Beta shape, or the flag for independent partial
+#' correlations).
 #' @inheritParams fit_regression
 #' @param per_observation Also ask for the log likelihood and predicted
 #'   outcome of each observation (as \code{fit_regression()} does, for
@@ -88,7 +93,7 @@ stan_data_of <- function(predictors, outcome, prior, per_observation = FALSE) {
 #' @examples
 #' str(flatcor_stan_data(mpg ~ wt + hp, mtcars, prior = "flat_r"))
 #' @export
-flatcor_stan_data <- function(formula, data, prior = "flat_partial_r", per_observation = FALSE) {
+flatcor_stan_data <- function(formula, data, prior = "joint_partial_r", per_observation = FALSE) {
   prior <- check_prior(prior, defaulted = missing(prior))
   parts <- predictors_and_outcome(formula, complete_rows(data, list(formula)))
   check_full_rank(parts$predictors)

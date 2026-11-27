@@ -7,12 +7,14 @@ Authors@R:
 Description: Bayes factors and estimation for linear regression with
     objective priors that extend Jeffreys' flat correlation to several
     predictors. With more than one predictor not everything can stay flat,
-    so three priors are built side by side, all R-squared ~
-    Beta(a, 1) with a uniform direction: flat partial r (a = k/2: every
+    so four priors are built side by side. Three are R-squared ~
+    Beta(a, 1) with a uniform direction: joint flat partial r (a = k/2: every
     correlation matrix of the outcome and predictors equally likely, as
     'rstanarm' stan_lm() with eta = 1, so each coefficient's partial correlation
     is flat for any number of predictors), flat R (a = 1/2) and flat
-    R-squared (a = 1). The default is flat partial r; the others are
+    R-squared (a = 1). The fourth, independent flat partial r, gives each predictor's partial
+    correlation its own flat prior, not linked to the others. The default is
+    joint flat partial r; the others are
     chosen with prior =. Their validation is at
     <https://github.com/dm-k1/flatcor-validation>. One 'Stan' model, which samples
     the prior in its own coordinates (R and a direction), gives the

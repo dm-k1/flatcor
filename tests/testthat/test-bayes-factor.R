@@ -62,7 +62,7 @@ test_that("every prior's Bayes factor against the intercept-only model matches i
   n <- length(y)
   k <- 2
   r_squared <- sample_r_squared(y, cbind(example_data$x1, example_data$x2))
-  for (prior in c("flat_partial_r", "flat_r", "flat_r_squared")) {
+  for (prior in c("joint_partial_r", "flat_r", "flat_r_squared")) {
     reference <- if (prior == "flat_r") log_bayes_factor_flat_r_by_directions(r_squared, n, k) else
       log_bayes_factor_by_g_mixture(r_squared, n, k, prior_shape(prior, k))
     result <- bayes_factor_models(y ~ x1 + x2, y ~ 1, example_data, prior = prior, seed = 1)
@@ -130,7 +130,7 @@ test_that("everything computed for a Bayes factor comes out, per model", {
 test_that("keep_fits adds the fits and bridge sampling's objects, and changes nothing else", {
   skip_without_stan()
   bayes_factor_with <- function(keep_fits) {
-    bayes_factor_models(y ~ x1 + x2, y ~ 1, example_data, prior = "flat_partial_r",
+    bayes_factor_models(y ~ x1 + x2, y ~ 1, example_data, prior = "joint_partial_r",
                         chains = 2, iter_sampling = 2000, seed = 6, keep_fits = keep_fits)
   }
   without <- bayes_factor_with(FALSE)
@@ -156,4 +156,14 @@ test_that("without a seed, the seed that comes out reproduces the Bayes factor",
   again <- bayes_factor_models(y ~ x1 + x2, y ~ x2, example_data, prior = "flat_r",
                                chains = 2, iter_sampling = 2000, seed = first$seed)
   expect_identical(again$log_bayes_factor, first$log_bayes_factor)
+})
+
+test_that("with one predictor, independent_partial_r gives the Bayes factor of flat_r", {
+  skip_without_stan()
+  independent <- bayes_factor_models(y ~ x1, y ~ 1, example_data,
+                                     prior = "independent_partial_r", seed = 1)
+  flat <- bayes_factor_models(y ~ x1, y ~ 1, example_data, prior = "flat_r", seed = 1)
+  expect_equal(unname(independent$divergent), c(0, 0))
+  expect_within_error(independent$log_bayes_factor, flat$log_bayes_factor,
+                      sqrt(independent$error^2 + flat$error^2))
 })

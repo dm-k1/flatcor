@@ -8,20 +8,21 @@ that extend Jeffreys' flat correlation to several predictors.
 
 With one predictor, the natural objective prior is flat on the correlation.
 With several, not every correlation-based quantity can be flat at once, so
-the package offers three priors from one family, *R*² ~ Beta(*a*, 1) with a
-uniform direction:
+the package offers four priors. Three are one family, *R*² ~ Beta(*a*, 1) with a
+uniform direction; the fourth gives each partial correlation its own flat prior:
 
 | `prior =`                    | *R*² prior    | Kept flat as predictors are added                          |
 | ------------------------------ | ---------------- | ---------------------------------------------------------- |
-| `"flat_partial_r"` (default) | Beta(*k*/2, 1) | each partial correlation (LKJ(1); `stan_lm` with η = 1) |
+| `"joint_partial_r"` (default) | Beta(*k*/2, 1) | each partial correlation (LKJ(1); `stan_lm` with η = 1) |
+| `"independent_partial_r"`  | whatever the partial correlations imply | each partial correlation, on its own (not linked to the others) |
 | `"flat_r"`                   | Beta(½, 1)      | the multiple correlation *R*                             |
 | `"flat_r_squared"`           | Beta(1, 1)       | *R*²                                                    |
 
-One Stan model does everything, for all three priors: the posterior for
+One Stan model does everything, for all four priors: the posterior for
 estimation, and the Bayes factor between any two linear models, from each
 model's marginal likelihood estimated by bridge sampling
 ([bridgesampling](https://cran.r-project.org/package=bridgesampling)). The
-default is flat partial r. The validation of the three priors side by side
+default is joint flat partial r. The validation of the priors side by side
 is in [dm-k1/flatcor-validation](https://github.com/dm-k1/flatcor-validation);
 the argument for them, and the paper, in
 [dm-k1/Objective-bayes](https://github.com/dm-k1/Objective-bayes).
@@ -66,7 +67,7 @@ Following the bridgesampling authors, each model gets ten times the draws used
 for estimation, and models up to about 90 predictors stay within the sizes
 they have shown it to work for.
 
-Without `prior =` the functions use flat partial r and say so once per
+Without `prior =` the functions use joint flat partial r and say so once per
 session. Rows with a missing value in a variable of the formula are left out,
 with a warning that gives the sample size used. A worked example on one
 dataset, start to finish: `system.file("examples", "example.R", package = "flatcor")`.

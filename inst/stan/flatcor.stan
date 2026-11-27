@@ -1,21 +1,32 @@
-// One of the three priors, R^2 ~ Beta(a, 1) with a uniform direction, sampled
-// in its own coordinates:
+// One of four priors, sampled in its own coordinates. Three are
+// R^2 ~ Beta(a, 1) with a uniform direction:
 //   R          the overall correlation (factor 1): R^2 ~ Beta(a, 1), with
-//              a = K/2 (flat_partial_r: every correlation matrix of
-//              (y, x1 ... xK) equally likely), 1/2 (flat_r) or 1 (flat_r_squared)
+//              a = K/2 (joint_partial_r: one prior over every valid correlation
+//              matrix of (y, x1 ... xK); each partial r is flat on its own,
+//              but they are linked), 1/2 (flat_r) or 1 (flat_r_squared)
 //   direction  how the total is divided, uniform on the sphere (factor 2)
 // and the coefficients follow from them (factor 3 is the conversion):
 //   b = sigma * f * (direction expressed in predictor units),  f = R / sqrt(1 - R^2)
 // In these coordinates the prior has no peak at zero, so the sampler
 // reaches small effects for any number of predictors.
 //
-// The sampler works with the size of R, R_magnitude in (0, 1). With several
-// predictors the sign of each coefficient lives in the direction. With one
+// The fourth, independent_partial_r, does not go through R at all: each
+// predictor's partial correlation with y (given the other predictors) gets
+// its own flat prior on (-1, 1), not linked to the others (data
+// independent_effects = 1). The sampler works with those partial
+// correlations directly, and the coefficients follow from them:
+//   b_j = sigma * rho_j / (s_j * sqrt(1 - rho_j^2)),  s_j = residual SD of x_j
+//                                                     given the other predictors
+// R and f are then what these coefficients imply.
+//
+// For the three R-based priors the sampler works with the size of R,
+// R_magnitude in (0, 1). With several predictors the sign of each coefficient lives in the direction. With one
 // predictor the sign of R is + or - with probability 1/2 each: it is
 // marginalised in the model block (the likelihood averaged over both signs)
 // and drawn in generated quantities. Sampling a signed R on (-1, 1) instead
 // would put a zero of the density at R = 0 whenever a > 1/2 (flat_r_squared:
 // density |R|), a wall the sampler cannot cross without divergent transitions.
+// independent_partial_r needs no such mixture: the sign is in partial_r.
 //
 // K = 0 is the intercept-only model: only alpha and sigma.
 //
@@ -43,15 +54,26 @@ data {
   int<lower=0, upper=1> per_observation; // 1: log_lik and y_rep per observation (loo,
                                          // pp_check); 0: skip them (Bayes factors, where
                                          // they would be N numbers per draw for nothing)
-  real<lower=0> r_squared_shape;         // a in R^2 ~ Beta(a, 1) (unused when K = 0)
+  real<lower=0> r_squared_shape;         // a in R^2 ~ Beta(a, 1) (unused when K = 0 or
+                                         // independent_effects = 1)
+  int<lower=0, upper=1> independent_effects; // 1: independent_partial_r, 0: the three
+                                         // R-based priors
 }
 transformed data {
   matrix[N, K] Xc;
   for (j in 1:K) Xc[, j] = X[, j] - mean(X[, j]);
   // Any square root of the predictor covariance works; Cholesky is the cheapest.
   // It turns a direction in "explained variance" units into predictor units.
+  matrix[K, K] predictor_covariance;
   matrix[K, K] root;
-  if (K > 0) root = cholesky_decompose(crossprod(Xc) / N);
+  // what each predictor has that the others don't: the SD of x_j left after
+  // the other predictors, 1 / sqrt(diag(Sigma^-1))_j (independent_partial_r)
+  vector[K] residual_sd;
+  if (K > 0) {
+    predictor_covariance = crossprod(Xc) / N;
+    root = cholesky_decompose(predictor_covariance);
+    residual_sd = 1 ./ sqrt(diagonal(inverse_spd(predictor_covariance)));
+  }
   // log of the normalising constant of z's density on R^K (K > 1): the
   // surface area of the unit sphere, 2 pi^(K/2) / Gamma(K/2), times the
   // integral of the radial part
@@ -63,29 +85,53 @@ transformed data {
 parameters {
   real alpha;
   real<lower=0> sigma;
-  vector<lower=0, upper=1>[K > 0 ? 1 : 0] R_size;   // |R|, absent when K = 0
+  vector<lower=0, upper=1>[K > 0 && !independent_effects ? 1 : 0] R_size;   // |R|, absent when
+                                                    // K = 0 or independent_effects
   // the direction is z / |z|. Any density for z that depends only on its length
   // makes the direction uniform; this one keeps |z| near 1, away from 0, where
   // the direction would be undefined (Stan's unit_vector lets |z| reach 0,
   // which gives divergent transitions)
-  vector[K > 1 ? K : 0] z;
+  vector[K > 1 && !independent_effects ? K : 0] z;
+  // independent_partial_r: each predictor's partial correlation with y, flat on its own
+  vector<lower=-1, upper=1>[independent_effects ? K : 0] partial_r;
 }
 transformed parameters {
-  real R_magnitude = K > 0 ? R_size[1] : 0;
-  real f_magnitude = R_magnitude / sqrt(1 - square(R_magnitude));   // |Cohen's f|
-  vector[K] direction;
-  if (K == 1) direction = rep_vector(1, 1);
-  if (K > 1)  direction = z / norm2(z);
-  // b' Sigma b = sigma^2 f^2; with one predictor this is |b|, its sign follows
+  real R_magnitude = 0;
+  real f_magnitude = 0;                          // |Cohen's f|
+  vector[K] direction = rep_vector(0, K);
+  // b' Sigma b = sigma^2 f^2. For the R-based priors this is |b| with one
+  // predictor, and its sign follows; with independent_partial_r, b_magnitude
+  // is already signed (the sign is in partial_r)
   vector[K] b_magnitude = rep_vector(0, K);
-  if (K > 0) b_magnitude = sigma * f_magnitude * mdivide_right_tri_low(direction', root)';
+  if (K > 0 && !independent_effects) {
+    R_magnitude = R_size[1];
+    f_magnitude = R_magnitude / sqrt(1 - square(R_magnitude));
+    if (K == 1) direction = rep_vector(1, 1);
+    if (K > 1)  direction = z / norm2(z);
+    b_magnitude = sigma * f_magnitude * mdivide_right_tri_low(direction', root)';
+  }
+  if (K > 0 && independent_effects) {
+    // step 1: each partial correlation is a parameter, partial_r
+    // step 2: residual_sd (transformed data)
+    // step 3: each rho_j to its coefficient
+    b_magnitude = sigma * partial_r ./ sqrt(1 - square(partial_r)) ./ residual_sd;
+    // step 4: what this implies for the total
+    f_magnitude = sqrt(quad_form(predictor_covariance, b_magnitude)) / sigma;
+    R_magnitude = f_magnitude / sqrt(1 + square(f_magnitude));
+    // the direction, in the same units as for the other priors
+    direction = (root' * b_magnitude) / norm2(root' * b_magnitude);
+  }
 }
 model {
   // factor 1: R^2 ~ Beta(a, 1), which is density 2a R^(2a - 1) on R in (0, 1)
-  if (K > 0)
+  if (K > 0 && !independent_effects)
     target += log(2 * r_squared_shape) + (2 * r_squared_shape - 1) * log(R_magnitude);
   // factor 2: direction uniform (z's density, normalised)
-  if (K > 1) target += -0.5 * square((norm2(z) - 1) / 0.1) - log_direction_constant;
+  if (K > 1 && !independent_effects)
+    target += -0.5 * square((norm2(z) - 1) / 0.1) - log_direction_constant;
+  // independent_partial_r: each rho_j ~ U(-1, 1) has density 1/2, so 2^-K in all
+  // (the full constant, which bridge sampling needs)
+  if (independent_effects) target += -K * log2();
 
   // A long trajectory sometimes overshoots far into a region of practically
   // zero probability, where R rounds to 1 (an infinite f), sigma rounds to 0
@@ -107,7 +153,7 @@ model {
       target += -log(sigma);                 // Jeffreys prior on the noise; alpha flat
     }
     if (!prior_only) {
-      if (K == 1)                            // the sign of R, + or - with probability 1/2
+      if (K == 1 && !independent_effects)    // the sign of R, + or - with probability 1/2
         target += log_mix(0.5, normal_lpdf(y | mu, sigma),
                                normal_lpdf(y | alpha - Xc * b_magnitude, sigma));
       else
@@ -118,7 +164,8 @@ model {
 generated quantities {
   // the sign of R (K = 1 only), drawn with the probability its likelihood gives it
   real sign_of_R = 1;
-  if (K == 1) {
+  if (K == 1 && independent_effects) sign_of_R = partial_r[1] >= 0 ? 1 : -1;
+  if (K == 1 && !independent_effects) {
     real log_odds_plus = 0;
     if (!prior_only)
       log_odds_plus = normal_lpdf(y | alpha + Xc * b_magnitude, sigma)
@@ -127,7 +174,8 @@ generated quantities {
   }
   real R = sign_of_R * R_magnitude;          // the overall correlation (signed when K = 1)
   real f = sign_of_R * f_magnitude;          // Cohen's f (signed when K = 1)
-  vector[K] b = sign_of_R * b_magnitude;     // the coefficients
+  // the coefficients (with independent_partial_r b_magnitude is already signed)
+  vector[K] b = independent_effects ? b_magnitude : sign_of_R * b_magnitude;
   // per observation: log-likelihood (for loo) and a predicted value (for
   // pp_check); empty when per_observation = 0
   vector[per_observation ? N : 0] log_lik;

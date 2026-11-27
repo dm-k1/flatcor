@@ -10,8 +10,9 @@ flatcor_stan_file()
 The path of the file.
 }
 \description{
-The path of \code{flatcor.stan}: one Stan program for the three priors (the
-prior's shape is data), the posterior and the intercept-only model.
+The path of \code{flatcor.stan}: one Stan program for the four priors (the
+prior's shape, or the flag for independent partial correlations, is data),
+the posterior and the intercept-only model.
 }
 \examples{
 cat(readLines(flatcor_stan_file()), sep = "\n")

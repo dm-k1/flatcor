@@ -2,12 +2,12 @@
 % Please edit documentation in R/fit.R
 \name{fit_regression}
 \alias{fit_regression}
-\title{Fit a linear regression with one of the three priors}
+\title{Fit a linear regression with one of the four priors}
 \usage{
 fit_regression(
   formula,
   data,
-  prior = "flat_partial_r",
+  prior = "joint_partial_r",
   chains = 4,
   iter_warmup = 1000,
   iter_sampling = 1000,
@@ -22,10 +22,14 @@ fit_regression(
 
 \item{data}{A data frame.}
 
-\item{prior}{\code{"flat_partial_r"} (every correlation matrix equally
-likely, R-squared ~ Beta(k/2, 1)), \code{"flat_r"} (R-squared ~
-Beta(1/2, 1) for every k) or \code{"flat_r_squared"} (R-squared ~
-Beta(1, 1) for every k). The default is \code{"flat_partial_r"}.}
+\item{prior}{\code{"joint_partial_r"} (one prior over all valid correlation
+matrices, every one equally likely; each partial correlation is flat on
+its own but they are linked; R-squared ~ Beta(k/2, 1)),
+\code{"independent_partial_r"} (each predictor's partial correlation gets
+its own flat prior, not linked to the others; R-squared is whatever they
+imply), \code{"flat_r"} (R-squared ~ Beta(1/2, 1) for every k) or
+\code{"flat_r_squared"} (R-squared ~ Beta(1, 1) for every k). The default
+is \code{"joint_partial_r"}.}
 
 \item{chains, iter_warmup, iter_sampling, adapt_delta, seed}{Sampler settings.}
 
@@ -64,14 +68,15 @@ fitted, and the divergent transitions in all chains.}
 }
 \description{
 Samples the prior in its own coordinates, the overall correlation R
-and a direction (uniform), with the coefficients computed from them
+and a direction (uniform), with the coefficients computed from them; for
+\code{"independent_partial_r"} the partial correlations
 (\code{inst/stan/flatcor.stan}). Intercept flat, noise level \eqn{1/\sigma}.
 }
 \examples{
 # needs CmdStan (cmdstanr::install_cmdstan())
 if (requireNamespace("cmdstanr", quietly = TRUE) &&
     !is.null(cmdstanr::cmdstan_version(error_on_NA = FALSE))) {
-  fit <- fit_regression(mpg ~ wt + hp, mtcars, prior = "flat_partial_r")
+  fit <- fit_regression(mpg ~ wt + hp, mtcars, prior = "joint_partial_r")
   fit
   loo(fit)
 }

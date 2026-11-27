@@ -1,5 +1,21 @@
 # flatcor (development version, to be 3.0.0)
 
+- The prior `"flat_partial_r"` is renamed `"joint_partial_r"` (no alias:
+  `"flat_partial_r"` is now an unknown prior). It is one prior over all valid
+  correlation matrices of the outcome and predictors; each partial
+  correlation is flat on its own, but they are linked. The default is
+  `"joint_partial_r"`.
+- New prior `"independent_partial_r"`: each predictor's partial correlation
+  with the outcome gets its own flat prior on (-1, 1), not linked to the
+  others (joint density 2^-k). R-squared is then whatever they imply. With
+  one predictor it is the same as `"joint_partial_r"` and `"flat_r"`. The
+  Stan model has a new data field `independent_effects` and, for this prior,
+  samples the partial correlations (`partial_r`) instead of R and a direction.
+  `draw_coefficients_from_prior()` supports it, and now also attaches
+  `partial_r` (each coefficient's partial correlation) for all priors.
+
+## Earlier in this version
+
 One Stan model now does everything, for all three priors: the posterior, and
 the Bayes factor between two models. No Bayes factor is computed by a formula
 of the package's own any more.
