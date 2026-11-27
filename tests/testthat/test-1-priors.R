@@ -39,3 +39,10 @@ test_that("independent_partial_r is a prior; flat_partial_r, its old name, is no
   expect_error(draw_coefficients_from_prior(10, diag(2), prior = "flat_partial_r"),
                "Unknown prior")
 })
+
+test_that("every prior has a label, in the order of the prior names", {
+  labels <- prior_labels()
+  expect_identical(names(labels), prior_names)
+  expect_true(all(nzchar(labels)))
+  expect_false(anyDuplicated(unname(labels)) > 0)
+})

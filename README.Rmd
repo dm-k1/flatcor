@@ -25,7 +25,7 @@ model's marginal likelihood estimated by bridge sampling
 default is joint flat partial r. The validation of the priors side by side
 is in [dm-k1/flatcor-simulation-studies](https://github.com/dm-k1/flatcor-simulation-studies);
 the argument for them, and the paper, in
-[dm-k1/Objective-bayes](https://github.com/dm-k1/Objective-bayes).
+[dm-k1/flatcor-paper](https://github.com/dm-k1/flatcor-paper).
 
 ## Install
 

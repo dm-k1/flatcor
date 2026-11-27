@@ -1,5 +1,7 @@
 # flatcor (development version, to be 3.0.0)
 
+- New `prior_labels()`: a readable label for each prior, named by the
+  prior names, for tables and plot legends.
 - The prior `"flat_partial_r"` is renamed `"joint_partial_r"` (no alias:
   `"flat_partial_r"` is now an unknown prior). It is one prior over all valid
   correlation matrices of the outcome and predictors; each partial

@@ -3,7 +3,7 @@
 ##  and one with independent partial correlations
 ## =====================================================================
 ## With one predictor, Jeffreys' flat correlation is the only choice. With k
-## predictors, not everything can stay flat (Objective-bayes/docs/1_why_a_choice.md): keeping each
+## predictors, not everything can stay flat (flatcor-paper/docs/1_why_a_choice.md): keeping each
 ## partial correlation flat makes R-squared grow with k, keeping the total flat
 ## makes each partial correlation shrink with k. The options compared:
 ##
@@ -35,6 +35,25 @@
 ## validation of the priors: https://github.com/dm-k1/flatcor-simulation-studies.
 
 prior_names   <- c("joint_partial_r", "independent_partial_r", "flat_r", "flat_r_squared")
+prior_label_text <- c("joint flat partial r", "independent flat partial r",
+                      "flat R", "flat R-squared")
+
+#' Readable labels of the four priors
+#'
+#' One short label per prior, in the order of the prior names, for tables
+#' and plot legends.
+#' @return A named character vector: the names are the values of the
+#'   \code{prior} argument (\code{"joint_partial_r"},
+#'   \code{"independent_partial_r"}, \code{"flat_r"},
+#'   \code{"flat_r_squared"}), the values their labels.
+#' @examples
+#' prior_labels()
+#' prior_labels()[["flat_r"]]
+#' @export
+prior_labels <- function() {
+  stopifnot(length(prior_label_text) == length(prior_names))
+  stats::setNames(prior_label_text, prior_names)
+}
 default_prior <- "joint_partial_r"
 default_prior_announced <- new.env()
 

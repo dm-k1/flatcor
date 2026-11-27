@@ -21,7 +21,8 @@
 #'    other predictors) flat on its own: rho_j ~ U(-1, 1).
 #' 2. What each predictor has that the others don't: its residual SD given
 #'    the others, s_j = 1 / sqrt(diag(solve(Sigma))).
-#' 3. Turn each rho_j into its coefficient: b_j = rho_j / (s_j sqrt(1 - rho_j^2)).
+#' 3. Turn each rho_j into its coefficient: b_j = rho_j / (s_j sqrt(1 - rho_j^2))
+#'    (sigma = 1).
 #' 4. What this implies for the total: f^2 = b' Sigma b, R^2 = f^2 / (1 + f^2).
 #'    For k > 1 this R^2 has no closed form and depends on Sigma; these
 #'    draws are how to see it.

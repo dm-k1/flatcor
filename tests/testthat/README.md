@@ -36,6 +36,7 @@ package. Only the `tests-cmdstanr` job runs them in full.
 | 1.1 | each prior has its shape, and joint_partial_r is the default | ✓ (it has no shape) |
 | 1.2 | the tests' sample R-squared is that of the least-squares fit | |
 | 1.3 | independent_partial_r is a prior; flat_partial_r, its old name, is not | ✓ |
+| 1.4 | every prior has a label, in the order of the prior names | |
 
 ## 2. `test-2-prior-draws.R`: the prior as a recipe (`draw_coefficients_from_prior()`)
 
