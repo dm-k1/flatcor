@@ -36,13 +36,22 @@ test_that("fit_regression() and bayes_factor_models() run with rstan", {
                           iter_warmup = 500, iter_sampling = 1000, seed = 1, backend = "rstan")
     bayes_factor <- bayes_factor_models(y ~ x1 + x2, y ~ 1, data, prior = "joint_partial_r",
                                         iter_sampling = 4000, seed = 5, backend = "rstan")
+    ## the independent prior has its own Stan parameters (partial_r): it runs too
+    independent <- fit_regression(y ~ x1 + x2, data, prior = "independent_partial_r",
+                                  chains = 2, iter_warmup = 500, iter_sampling = 1000,
+                                  seed = 1, backend = "rstan")
     list(variables = posterior::variables(fit$draws), sampler = fit$sampler,
+         independent_variables = posterior::variables(independent$draws),
+         independent_sampler = independent$sampler,
          stan_variables = posterior::variables(posterior::as_draws(as.array(fit$fit))),
          bayes_factor = bayes_factor)
   }))
   expect_setequal(result$variables, c("Intercept", "x1", "x2", "sigma", "R_squared"))
   ## the sampler's diagnostics and every Stan variable come out with rstan too
   expect_identical(nrow(result$sampler), 2L)
+  expect_true(all(c("Intercept", "x1", "x2", "sigma", "R_squared") %in%
+                    result$independent_variables))
+  expect_identical(nrow(result$independent_sampler), 2L)
   expect_false(anyNA(result$sampler))
   expect_true(all(c("alpha", "R", "f", "direction[1]") %in% result$stan_variables))
   model_a <- result$bayes_factor$models$a

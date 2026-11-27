@@ -166,3 +166,25 @@ test_that("Stan, sampling the prior only, gives the draws of the recipe", {
     expect_lt(distance, 0.05)
   }
 })
+
+test_that("partial_r is each coefficient's partial correlation, by the textbook definition", {
+  ## The partial correlation of y and x_j given the other predictors, read
+  ## from the inverse of the covariance matrix of (y, x1 ... xk):
+  ## -P[y, j] / sqrt(P[y, y] * P[j, j]). This checks the conversion
+  ## b_j = rho_j / (s_j sqrt(1 - rho_j^2)) against a definition that does not use it.
+  set.seed(16)
+  for (prior in prior_names) {
+    draws <- draw_coefficients_from_prior(5, correlated_three, prior = prior)
+    for (draw in 1:5) {
+      b <- draws[draw, ]
+      ## covariance of (y, x1 ... xk) with sigma = 1: Var(y) = b' Sigma b + 1
+      covariance <- rbind(
+        c(sum(b * (correlated_three %*% b)) + 1, b %*% correlated_three),
+        cbind(correlated_three %*% b, correlated_three)
+      )
+      precision <- solve(covariance)
+      textbook <- -precision[1, -1] / sqrt(precision[1, 1] * diag(precision)[-1])
+      expect_equal(attr(draws, "partial_r")[draw, ], textbook, tolerance = 1e-8)
+    }
+  }
+})

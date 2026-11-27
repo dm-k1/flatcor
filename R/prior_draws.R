@@ -54,7 +54,7 @@ draw_coefficients_from_prior <- function(number_of_draws, predictor_covariance,
   draws
 }
 
-## The recipe of the three R-based priors (R-squared ~ Beta(a, 1), uniform
+## The recipe of the three R-squared ~ Beta(a, 1) priors (R-squared ~ Beta(a, 1), uniform
 ## direction), steps 1 to 3 above.
 draw_from_joint_family <- function(number_of_draws, predictor_covariance, prior) {
   number_of_predictors <- ncol(predictor_covariance)

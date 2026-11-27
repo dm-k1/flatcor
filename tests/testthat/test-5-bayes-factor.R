@@ -76,10 +76,14 @@ test_that("every prior's Bayes factor against the intercept-only model matches i
 test_that("rescaling the predictors and the outcome leaves the Bayes factor unchanged", {
   skip_without_stan()
   rescaled <- transform(example_data, x1 = 100 * x1 + 7, y = 1000 * y - 3)
-  original <- bayes_factor_models(y ~ x1 + x2, y ~ x2, example_data, prior = "flat_r", seed = 2)
-  changed  <- bayes_factor_models(y ~ x1 + x2, y ~ x2, rescaled, prior = "flat_r", seed = 2)
-  expect_within_error(changed$log_bayes_factor, original$log_bayes_factor,
-                      sqrt(original$error^2 + changed$error^2))
+  ## flat_r for the R-squared ~ Beta(a, 1) priors; independent_partial_r has
+  ## its own parameters (one partial correlation per predictor) and is checked too
+  for (prior in c("flat_r", "independent_partial_r")) {
+    original <- bayes_factor_models(y ~ x1 + x2, y ~ x2, example_data, prior = prior, seed = 2)
+    changed  <- bayes_factor_models(y ~ x1 + x2, y ~ x2, rescaled, prior = prior, seed = 2)
+    expect_within_error(changed$log_bayes_factor, original$log_bayes_factor,
+                        sqrt(original$error^2 + changed$error^2))
+  }
 })
 
 test_that("a seed, or set.seed() beforehand, makes the Bayes factor reproducible", {

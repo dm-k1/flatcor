@@ -19,7 +19,7 @@
 //                                                     given the other predictors
 // R and f are then what these coefficients imply.
 //
-// For the three R-based priors the sampler works with the size of R,
+// For the three R-squared ~ Beta(a, 1) priors the sampler works with the size of R,
 // R_magnitude in (0, 1). With several predictors the sign of each coefficient lives in the direction. With one
 // predictor the sign of R is + or - with probability 1/2 each: it is
 // marginalised in the model block (the likelihood averaged over both signs)

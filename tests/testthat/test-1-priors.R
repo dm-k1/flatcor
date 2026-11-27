@@ -1,5 +1,6 @@
-## The three priors as one family, R-squared ~ Beta(a, 1) with a uniform
-## direction (R/priors.R)
+## The four priors (R/priors.R): three are one family, R-squared ~ Beta(a, 1)
+## with a uniform direction; independent_partial_r gives each partial
+## correlation its own flat prior
 
 test_that("each prior has its shape, and joint_partial_r is the default", {
   expect_equal(prior_shape("joint_partial_r", 6), 3)

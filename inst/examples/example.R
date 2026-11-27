@@ -1,7 +1,8 @@
 ## =====================================================================
 ##  Example: flatcor on one dataset, start to finish
-##  Estimation, then Bayes factors for model comparisons, with the three
-##  priors side by side: joint_partial_r, flat_r and flat_r_squared. The
+##  Estimation, then Bayes factors for model comparisons, with the four
+##  priors side by side: joint_partial_r, independent_partial_r, flat_r and
+##  flat_r_squared. The
 ##  default is joint_partial_r; prior = selects the others (the validation:
 ##  https://github.com/dm-k1/flatcor-validation). Everything runs on Stan.
 ## =====================================================================
@@ -29,17 +30,20 @@ loo(full_model)                  # leave-one-out cross-validation
 pp_check(full_model)             # posterior predictive check
 bayesplot::mcmc_trace(full_model$draws)   # trace plots (any bayesplot plot works on $draws)
 
-## The three priors side by side: at n = 60 with three predictors each prior
+## The four priors side by side: at n = 60 with three predictors each prior
 ## pulls the estimates toward zero, by a different amount
-priors <- c("joint_partial_r", "flat_r", "flat_r_squared")
-other_fits <- lapply(c(flat_r = "flat_r", flat_r_squared = "flat_r_squared"), function(prior) {
+priors <- c("joint_partial_r", "independent_partial_r", "flat_r", "flat_r_squared")
+other_fits <- lapply(c(independent_partial_r = "independent_partial_r",
+                       flat_r = "flat_r",
+                       flat_r_squared = "flat_r_squared"), function(prior) {
   fit_regression(y ~ x1 + x2 + x3, data = my_data, prior = prior, chains = 4,
                  iter_warmup = 1000, iter_sampling = 1000, seed = 1)
 })
 posterior_means <- function(fit) colMeans(as.data.frame(fit$draws)[, c("x1", "x2", "x3")])
-cbind(joint_partial_r = posterior_means(full_model),
-      flat_r         = posterior_means(other_fits$flat_r),
-      flat_r_squared = posterior_means(other_fits$flat_r_squared))
+cbind(joint_partial_r       = posterior_means(full_model),
+      independent_partial_r = posterior_means(other_fits$independent_partial_r),
+      flat_r                = posterior_means(other_fits$flat_r),
+      flat_r_squared        = posterior_means(other_fits$flat_r_squared))
 
 ## ---- 3. Comparing models ------------------------------------------
 ## Takes two formulas and the data; each model is fitted with the prior and
